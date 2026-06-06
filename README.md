@@ -1,10 +1,10 @@
-# BBR v3 优化脚本 - Ultimate Edition v5.0.2
+# BBR v3 优化脚本 - Ultimate Edition v5.0.3
 
 **XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**
 
 一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 32 项实用功能，优化你的 VPS 服务器。
 
-> **版本**: v5.0.2 🔧 **修复更新**：修复 Snell 查看节点配置在 VPS 换 IP 后仍输出旧 IP，并优化 Xray 默认端口交互与功能描述
+> **版本**: v5.0.3 🔧 **修复更新**：修复 Xray Reality 密钥对解析，兼容 `Private key` / `Public key` 输出格式
 
 ---
 
@@ -55,6 +55,8 @@ wget -O net-tcp-tune.sh "https://raw.githubusercontent.com/Eric86777/vps-tcp-tun
 chmod +x net-tcp-tune.sh
 ./net-tcp-tune.sh
 ```
+
+> 本地下载的脚本不会自动更新；需要新版时请重新执行上面的 `wget` 命令，或优先使用 `bbr` 快捷别名。
 
 </details>
 

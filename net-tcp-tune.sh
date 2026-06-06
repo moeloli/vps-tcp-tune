@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.0.3 更新: 修复 Xray Reality 密钥对解析兼容性，适配 Private key/Public key 输出格式 (by Eric86777)
 # v5.0.2 更新: 修复 Snell 查看节点配置换 IP 后仍输出旧 IP；修复 Xray 子菜单 warning 调用和默认端口交互；同步 README 功能描述 (by Eric86777)
 # v5.0.1 更新: 修复 XanMod 官方源 releases 为空导致 BBR v3 内核安装找不到 linux-xanmod-x64v3；改为按系统 codename 写源并校验包存在；修复 CF Tunnel 带引号 --config 解析 (by Eric86777)
 # v5.0.0 更新: 新增 Cloudflare Tunnel 管理模块 (菜单 32-7)：12 项子功能 + 6 步向导含失败自动回滚；修复 Sub-Store 6 个历史 bug；统一配置到 /etc/cloudflared/ 并自动迁移老路径 (by Eric86777)
 # v4.9.8 更新: 修复Snell/VLESS/OAI2节点随机掉线：Restart=always+systemd健壮性加固；XanMod内核安装增加本地CPU检测兜底 (by Eric86777)
-# v4.9.5 更新: 修复Responses API代理SSE解析，解决502报错，重新部署生效 (by Eric86777)
 
-SCRIPT_VERSION="5.0.2"
-SCRIPT_LAST_UPDATE="修复 Snell 查看配置换 IP 后仍输出旧 IP；修复 Xray warning 调用与默认端口交互；同步 Xray 功能说明"
+SCRIPT_VERSION="5.0.3"
+SCRIPT_LAST_UPDATE="修复 Xray Reality 密钥对解析，兼容 Private key/Public key 输出格式"
 #=============================================================================
 
 #=============================================================================
@@ -8664,17 +8664,17 @@ run_xinchendahai_xray() {
 
 # ==============================================================================
 # Xray VLESS-Reality & Shadowsocks 2022 多功能管理脚本
-# 版本: Final v2.9.2
-# 更新日志 (v2.9.2):
-# - [修复] 修正 SOCKS5 链式代理 warning 函数调用
-# - [体验] VLESS/SS 留空优先使用默认端口，不可用时自动随机端口
+# 版本: Final v2.9.3
+# 更新日志 (v2.9.3):
+# - [修复] 兼容 Xray x25519 的 Private key/Public key 与 PrivateKey/PublicKey 输出格式
+# - [修复] 避免 Reality 密钥对解析为空导致新增 VLESS 失败
 # ==============================================================================
 
 # --- Shell 严格模式 ---
 set -euo pipefail
 
 # --- 全局常量 ---
-readonly XRAY_SCRIPT_VERSION="Final v2.9.2"
+readonly XRAY_SCRIPT_VERSION="Final v2.9.3"
 readonly xray_config_path="/usr/local/etc/xray/config.json"
 readonly xray_binary_path="/usr/local/bin/xray"
 readonly xray_install_script_url="https://github.com/XTLS/Xray-install/raw/main/install-release.sh"
@@ -8734,7 +8734,7 @@ get_public_ip() {
                 ip=$($cmd "$url" 2>/dev/null) && [[ -n "$ip" ]] && echo "$ip" && return
             done
         done
-        ((attempts++))
+        attempts=$((attempts + 1))
         [[ $attempts -lt $max_attempts ]] && sleep 1
     done
     
@@ -8805,6 +8805,48 @@ generate_shortid() {
     openssl rand -hex 4
 }
 
+extract_xray_x25519_key() {
+    local wanted="$1"
+    awk -F':[[:space:]]*' -v wanted="$wanted" '
+        {
+            label=tolower($1)
+            gsub(/[[:space:]]/, "", label)
+            if (wanted == "private" && label == "privatekey") {
+                print $NF
+                exit
+            }
+            if (wanted == "public" && (label == "publickey" || label == "password" || label == "password(publickey)")) {
+                print $NF
+                exit
+            }
+        }
+    '
+}
+
+generate_reality_key_pair() {
+    local key_pair private_key public_key
+
+    if ! key_pair=$("$xray_binary_path" x25519 2>/dev/null); then
+        error "生成 Reality 密钥对失败！Xray x25519 命令执行失败。"
+        return 1
+    fi
+
+    private_key=$(printf '%s\n' "$key_pair" | extract_xray_x25519_key private)
+    public_key=$(printf '%s\n' "$key_pair" | extract_xray_x25519_key public)
+
+    if [[ -z "$private_key" || -z "$public_key" ]]; then
+        error "生成 Reality 密钥对失败！无法解析 Xray x25519 输出。"
+        return 1
+    fi
+
+    if ! [[ "$private_key" =~ ^[A-Za-z0-9_-]{43}$ && "$public_key" =~ ^[A-Za-z0-9_-]{43}$ ]]; then
+        error "生成 Reality 密钥对失败！Xray x25519 输出的密钥格式异常。"
+        return 1
+    fi
+
+    printf '%s|%s\n' "$private_key" "$public_key"
+}
+
 build_vless_inbound() {
     local port="$1" uuid="$2" domain="$3" private_key="$4" public_key="$5" node_name="$6"
     local shortid="${7:-$(generate_shortid)}"
@@ -8868,7 +8910,7 @@ write_config() {
                 # 提取所有自定义的 routing rules（排除默认的广告过滤规则）
                 # 判断是否为自定义规则：包含 inboundTag 或 outboundTag 以 "socks5-" 开头
                 local temp_rules
-                temp_rules=$(jq -c '[.routing.rules[]? | select(.inboundTag != null or (.outboundTag? | startswith("socks5-")))]' "$xray_config_path" 2>/dev/null)
+                temp_rules=$(jq -c '[.routing.rules[]? | select(.inboundTag != null or ((.outboundTag? // "") | startswith("socks5-")))]' "$xray_config_path" 2>/dev/null)
                 
                 # 验证提取结果是否为有效的 JSON 数组
                 if [[ -n "$temp_rules" ]] && echo "$temp_rules" | jq empty 2>/dev/null; then
@@ -9372,14 +9414,8 @@ add_vless_to_ss() {
     prompt_for_vless_config vless_port vless_uuid vless_domain vless_node_name "$default_vless_port"
 
     info "正在生成 Reality 密钥对..."
-    key_pair=$("$xray_binary_path" x25519)
-    private_key=$(echo "$key_pair" | awk '/PrivateKey:/ {print $2}')
-    public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $NF}')
-
-    if [[ -z "$private_key" || -z "$public_key" ]]; then
-        error "生成 Reality 密钥对失败！请检查 Xray 核心是否正常，或尝试卸载后重装。"
-        exit 1
-    fi
+    key_pair=$(generate_reality_key_pair) || return 1
+    IFS='|' read -r private_key public_key <<< "$key_pair"
 
     vless_inbound=$(build_vless_inbound "$vless_port" "$vless_uuid" "$vless_domain" "$private_key" "$public_key" "$vless_node_name")
     write_config "[$vless_inbound, $ss_inbound]"
@@ -9492,14 +9528,8 @@ add_new_vless() {
 
     info "正在生成 Reality 密钥对..."
     local key_pair private_key public_key
-    key_pair=$("$xray_binary_path" x25519)
-    private_key=$(echo "$key_pair" | awk '/PrivateKey:/ {print $2}')
-    public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $NF}')
-
-    if [[ -z "$private_key" || -z "$public_key" ]]; then
-        error "生成 Reality 密钥对失败！请检查 Xray 核心是否正常。"
-        return 1
-    fi
+    key_pair=$(generate_reality_key_pair) || return 1
+    IFS='|' read -r private_key public_key <<< "$key_pair"
 
     local new_vless_inbound
     new_vless_inbound=$(build_vless_inbound "$vless_port" "$vless_uuid" "$vless_domain" "$private_key" "$public_key" "$vless_node_name")
@@ -10239,7 +10269,7 @@ list_socks5_proxies() {
     local socks5_rules
     socks5_rules=$(jq -r '
         .routing.rules[]? | 
-        select(.outboundTag? | startswith("socks5-")) | 
+        select((.outboundTag? // "") | startswith("socks5-")) |
         "\(.inboundTag[0])|\(.outboundTag)"
     ' "$xray_config_path" 2>/dev/null)
     
@@ -10289,7 +10319,7 @@ delete_socks5_proxy() {
     local socks5_rules
     socks5_rules=$(jq -r '
         .routing.rules[]? | 
-        select(.outboundTag? | startswith("socks5-")) | 
+        select((.outboundTag? // "") | startswith("socks5-")) |
         "\(.inboundTag[0])|\(.outboundTag)"
     ' "$xray_config_path" 2>/dev/null)
     
@@ -10503,14 +10533,8 @@ run_install_vless() {
     run_core_install || exit 1
     info "正在生成 Reality 密钥对..."
     local key_pair private_key public_key vless_inbound
-    key_pair=$("$xray_binary_path" x25519)
-    private_key=$(echo "$key_pair" | awk '/PrivateKey:/ {print $2}')
-    public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $NF}')
-
-    if [[ -z "$private_key" || -z "$public_key" ]]; then
-        error "生成 Reality 密钥对失败！请检查 Xray 核心是否正常，或尝试卸载后重装。"
-        exit 1
-    fi
+    key_pair=$(generate_reality_key_pair) || exit 1
+    IFS='|' read -r private_key public_key <<< "$key_pair"
 
     vless_inbound=$(build_vless_inbound "$port" "$uuid" "$domain" "$private_key" "$public_key" "$node_name")
     write_config "[$vless_inbound]"
@@ -10547,14 +10571,8 @@ run_install_dual() {
     run_core_install || exit 1
     info "正在生成 Reality 密钥对..."
     local key_pair private_key public_key vless_inbound ss_inbound
-    key_pair=$("$xray_binary_path" x25519)
-    private_key=$(echo "$key_pair" | awk '/PrivateKey:/ {print $2}')
-    public_key=$(echo "$key_pair" | awk '/PublicKey/ {print $NF}')
-
-    if [[ -z "$private_key" || -z "$public_key" ]]; then
-        error "生成 Reality 密钥对失败！请检查 Xray 核心是否正常，或尝试卸载后重装。"
-        exit 1
-    fi
+    key_pair=$(generate_reality_key_pair) || exit 1
+    IFS='|' read -r private_key public_key <<< "$key_pair"
 
     vless_inbound=$(build_vless_inbound "$vless_port" "$vless_uuid" "$vless_domain" "$private_key" "$public_key" "$vless_node_name")
     ss_inbound=$(build_ss_inbound "$ss_port" "$ss_password" "$ss_node_name")
