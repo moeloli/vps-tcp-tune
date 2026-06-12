@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.1.2 更新: Snell v6 二进制自检改用 ldd 检测缺库（零执行/不卡死/一次列全），--help 探测加 timeout 兜底，去掉会误判的「No such file」匹配 (by Eric86777)
 # v5.1.1 更新: Snell v6 安装增加二进制运行自检；缺运行库时自动/提示安装测试兼容依赖，并清理失败残留端口 (by Eric86777)
 # v5.1.0 更新: Snell 菜单新增「12-8 v6 Beta 测试专区」：独立二进制/服务/配置/保留端口，与 v5 完全隔离，含装/卸/查/更新+修复/健康检查 (by Eric86777)
 # v5.0.6 更新: 代码质量大扫除：Snell 下载逻辑合并去重+unzip 完整性校验、版本号常量化、删除死代码/死变量、修复 15 处引号分词隐患、Xray 子脚本错误处理加固 (by Eric86777)
 # v5.0.5 更新: 修复 bbr 快捷命令在存在异常 ~/.curlrc/Authorization 配置时可能 curl 401 的问题，别名改用 curl -q (by Eric86777)
-# v5.0.4 更新: Snell 12-4 改为一键修复不通/掉线：补齐旧实例 systemd/端口保留/每日重启兜底并保留核心更新入口 (by Eric86777)
 
-SCRIPT_VERSION="5.1.1"
-SCRIPT_LAST_UPDATE="Snell v6 安装前自检、补齐测试兼容依赖并清理失败残留端口"
+SCRIPT_VERSION="5.1.2"
+SCRIPT_LAST_UPDATE="Snell v6 二进制自检改用 ldd（不卡死、一次列全缺库），--help 加 timeout 兜底"
 #=============================================================================
 
 #=============================================================================
@@ -9149,7 +9149,7 @@ SNELLV6_LAST_CHECK_ERROR=""
 
 snellv6_check_binary_runnable() {
     local bin="${1:-$SNELLV6_BIN}"
-    local output rc
+    local output rc missing
     SNELLV6_LAST_CHECK_ERROR=""
 
     if [ ! -x "$bin" ]; then
@@ -9157,10 +9157,28 @@ snellv6_check_binary_runnable() {
         return 1
     fi
 
-    output=$("$bin" --help 2>&1)
-    rc=$?
+    # 首选 ldd：不执行二进制（零 hang 风险、无副作用），一次性列出所有缺失的共享库。
+    # 输出形如 "libcares.so.2 => not found"，正好喂给 snellv6_install_runtime_compat_for_error。
+    if command -v ldd >/dev/null 2>&1; then
+        missing=$(ldd "$bin" 2>/dev/null | grep -i "not found" || true)
+        if [ -n "$missing" ]; then
+            SNELLV6_LAST_CHECK_ERROR="$missing"
+            return 1
+        fi
+    fi
+
+    # 兜底：实际执行一次以捕捉非库类启动错误（如 Exec format error）。
+    # 用 timeout 包裹，防止 snell-server 不识别 --help 而尝试常驻导致自检卡死。
+    if command -v timeout >/dev/null 2>&1; then
+        output=$(timeout 5 "$bin" --help 2>&1)
+        rc=$?
+    else
+        output=$("$bin" --help 2>&1)
+        rc=$?
+    fi
     # Snell 未必保证 --help 返回 0；只要能执行且不是动态库/格式错误，就视为运行环境可用。
-    if echo "$output" | grep -Eq "error while loading shared libraries|cannot open shared object file|Exec format error|No such file or directory"; then
+    # timeout 杀掉常驻进程会返回 124，此时库已由上面的 ldd 确认就绪，视为可运行（不误判失败）。
+    if echo "$output" | grep -Eq "error while loading shared libraries|cannot open shared object file|Exec format error"; then
         SNELLV6_LAST_CHECK_ERROR="$output"
         return 1
     fi
