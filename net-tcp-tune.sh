@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.1.4 更新: Snell v6 自检前主动装齐标准源运行库 libc-ares2+libuv1（避免逐个自检"打地鼠"），reactive 处理器补 libuv.so.1 兜底 (by Eric86777)
 # v5.1.3 更新: Snell v6 的 libssl1.1 兼容包改为官方源+snapshot 永久存档双源、双架构强制 SHA256 校验、装后确认 libcrypto.so.1.1，彻底解决点版本升级后链接 404 (by Eric86777)
 # v5.1.2 更新: Snell v6 二进制自检改用 ldd 检测缺库（零执行/不卡死/一次列全），--help 探测加 timeout 兜底，去掉会误判的「No such file」匹配 (by Eric86777)
 # v5.1.1 更新: Snell v6 安装增加二进制运行自检；缺运行库时自动/提示安装测试兼容依赖，并清理失败残留端口 (by Eric86777)
 # v5.1.0 更新: Snell 菜单新增「12-8 v6 Beta 测试专区」：独立二进制/服务/配置/保留端口，与 v5 完全隔离，含装/卸/查/更新+修复/健康检查 (by Eric86777)
-# v5.0.6 更新: 代码质量大扫除：Snell 下载逻辑合并去重+unzip 完整性校验、版本号常量化、删除死代码/死变量、修复 15 处引号分词隐患、Xray 子脚本错误处理加固 (by Eric86777)
 
-SCRIPT_VERSION="5.1.3"
-SCRIPT_LAST_UPDATE="Snell v6 libssl1.1 兼容包：官方+snapshot 永久双源、双架构 SHA256 校验、装后确认"
+SCRIPT_VERSION="5.1.4"
+SCRIPT_LAST_UPDATE="Snell v6 自检前装齐 libc-ares2+libuv1，reactive 补 libuv 兜底，消除依赖打地鼠"
 #=============================================================================
 
 #=============================================================================
@@ -9298,6 +9298,16 @@ snellv6_install_runtime_compat_for_error() {
         handled=0
     fi
 
+    if echo "$error_text" | grep -q "libuv.so.1"; then
+        if ! command -v apt >/dev/null 2>&1; then
+            echo -e "${SNELL_RED}缺少 libuv.so.1，但当前系统没有 apt，无法自动安装 libuv1。${SNELL_RESET}"
+            return 1
+        fi
+        echo -e "${SNELL_YELLOW}检测到缺少 libuv.so.1，正在安装 libuv1...${SNELL_RESET}"
+        apt install -y libuv1 || return 1
+        handled=0
+    fi
+
     if echo "$error_text" | grep -q "libsodium.so.23"; then
         if ! command -v apt >/dev/null 2>&1; then
             echo -e "${SNELL_RED}缺少 libsodium.so.23，但当前系统没有 apt，无法自动安装 libsodium23。${SNELL_RESET}"
@@ -9314,6 +9324,22 @@ snellv6_install_runtime_compat_for_error() {
     fi
 
     [ "$handled" -eq 0 ]
+}
+
+# 主动补齐 Snell v6 需要、且标准源即有的运行库（libc-ares2 / libuv1），
+# 在二进制自检前一次性装好，避免逐个自检失败式的"打地鼠"。libssl1.1 仍走特殊源单独处理。
+snellv6_install_base_runtime_libs() {
+    command -v apt >/dev/null 2>&1 || return 0
+    local -a pkgs=()
+    if ! { command -v ldconfig >/dev/null 2>&1 && ldconfig -p 2>/dev/null | grep -q 'libcares\.so\.2'; }; then
+        pkgs+=(libc-ares2)
+    fi
+    if ! { command -v ldconfig >/dev/null 2>&1 && ldconfig -p 2>/dev/null | grep -q 'libuv\.so\.1'; }; then
+        pkgs+=(libuv1)
+    fi
+    [ "${#pkgs[@]}" -eq 0 ] && return 0
+    echo -e "${SNELL_GREEN}补齐 Snell v6 运行库（标准源）: ${pkgs[*]}${SNELL_RESET}"
+    apt install -y "${pkgs[@]}" || true
 }
 
 snellv6_ensure_binary_runnable() {
@@ -9802,6 +9828,9 @@ install_snellv6() {
         echo "${SNELL_V6_DEFAULT_VERSION}" > "$SNELLV6_VERSION_FILE"
         downloaded_now=1
     fi
+
+    # 先把标准源里的 v6 运行库装齐（libc-ares2 / libuv1），减少逐个自检失败
+    snellv6_install_base_runtime_libs
 
     echo -e "${SNELL_CYAN}正在自检 Snell v6 二进制运行环境...${SNELL_RESET}"
     if ! snellv6_ensure_binary_runnable "$SNELLV6_BIN"; then
