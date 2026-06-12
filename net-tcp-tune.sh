@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.1.1 更新: Snell v6 安装增加二进制运行自检；缺运行库时自动/提示安装测试兼容依赖，并清理失败残留端口 (by Eric86777)
 # v5.1.0 更新: Snell 菜单新增「12-8 v6 Beta 测试专区」：独立二进制/服务/配置/保留端口，与 v5 完全隔离，含装/卸/查/更新+修复/健康检查 (by Eric86777)
 # v5.0.6 更新: 代码质量大扫除：Snell 下载逻辑合并去重+unzip 完整性校验、版本号常量化、删除死代码/死变量、修复 15 处引号分词隐患、Xray 子脚本错误处理加固 (by Eric86777)
 # v5.0.5 更新: 修复 bbr 快捷命令在存在异常 ~/.curlrc/Authorization 配置时可能 curl 401 的问题，别名改用 curl -q (by Eric86777)
 # v5.0.4 更新: Snell 12-4 改为一键修复不通/掉线：补齐旧实例 systemd/端口保留/每日重启兜底并保留核心更新入口 (by Eric86777)
-# v5.0.3 更新: 修复 Xray Reality 密钥对解析兼容性，适配 Private key/Public key 输出格式 (by Eric86777)
 
-SCRIPT_VERSION="5.1.0"
-SCRIPT_LAST_UPDATE="Snell 新增 v6 Beta 测试专区（12-8），与 v5 完全隔离"
+SCRIPT_VERSION="5.1.1"
+SCRIPT_LAST_UPDATE="Snell v6 安装前自检、补齐测试兼容依赖并清理失败残留端口"
 #=============================================================================
 
 #=============================================================================
@@ -9145,6 +9145,141 @@ snellv6_download_binary() {
     echo "$tmp_dir"
 }
 
+SNELLV6_LAST_CHECK_ERROR=""
+
+snellv6_check_binary_runnable() {
+    local bin="${1:-$SNELLV6_BIN}"
+    local output rc
+    SNELLV6_LAST_CHECK_ERROR=""
+
+    if [ ! -x "$bin" ]; then
+        SNELLV6_LAST_CHECK_ERROR="二进制不存在或不可执行: $bin"
+        return 1
+    fi
+
+    output=$("$bin" --help 2>&1)
+    rc=$?
+    # Snell 未必保证 --help 返回 0；只要能执行且不是动态库/格式错误，就视为运行环境可用。
+    if echo "$output" | grep -Eq "error while loading shared libraries|cannot open shared object file|Exec format error|No such file or directory"; then
+        SNELLV6_LAST_CHECK_ERROR="$output"
+        return 1
+    fi
+    if [ "$rc" -eq 127 ]; then
+        SNELLV6_LAST_CHECK_ERROR="$output"
+        return 1
+    fi
+    return 0
+}
+
+snellv6_install_legacy_libssl11() {
+    local arch deb_url deb_sha tmp_deb confirm
+    arch=$(dpkg --print-architecture 2>/dev/null || echo "")
+
+    case "$arch" in
+        amd64)
+            deb_url="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_amd64.deb"
+            deb_sha="e1ae82de5cefb8c24023ae12ae5c150787c6c9d8c03f305f076ff44067776b3c"
+            ;;
+        arm64)
+            deb_url="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_arm64.deb"
+            deb_sha=""
+            ;;
+        *)
+            echo -e "${SNELL_RED}当前架构 ${arch:-未知} 暂不支持自动安装 libssl1.1 兼容包。${SNELL_RESET}"
+            return 1
+            ;;
+    esac
+
+    echo -e "${SNELL_YELLOW}检测到 Snell v6 Beta 需要旧版 OpenSSL 1.1 运行库（libcrypto.so.1.1）。${SNELL_RESET}"
+    echo -e "${SNELL_YELLOW}Debian 12 默认不再内置该库；为测试 v6，可安装 Debian bullseye-security 的 libssl1.1 兼容包。${SNELL_RESET}"
+    echo -e "${SNELL_YELLOW}这只用于 Snell v6 Beta 测试，若你介意旧运行库，请选择 N 并等待官方更新无依赖二进制。${SNELL_RESET}"
+    read -p "是否下载并安装 libssl1.1 兼容包以继续测试 Snell v6？[y/N]: " confirm
+    case "$confirm" in
+        y|Y|yes|YES) ;;
+        *)
+            echo -e "${SNELL_YELLOW}已取消安装兼容库，Snell v6 安装中止。${SNELL_RESET}"
+            return 1
+            ;;
+    esac
+
+    tmp_deb=$(mktemp /tmp/snellv6-libssl1.1.XXXXXX.deb) || return 1
+    echo -e "${SNELL_GREEN}正在下载 libssl1.1 兼容包...${SNELL_RESET}"
+    if ! wget --timeout=30 --tries=3 -q --show-progress "$deb_url" -O "$tmp_deb" || [ ! -s "$tmp_deb" ]; then
+        echo -e "${SNELL_RED}下载 libssl1.1 兼容包失败。${SNELL_RESET}"
+        rm -f "$tmp_deb"
+        return 1
+    fi
+
+    if [ -n "$deb_sha" ] && command -v sha256sum >/dev/null 2>&1; then
+        if ! printf '%s  %s\n' "$deb_sha" "$tmp_deb" | sha256sum -c - >/dev/null 2>&1; then
+            echo -e "${SNELL_RED}libssl1.1 兼容包校验失败，已中止。${SNELL_RESET}"
+            rm -f "$tmp_deb"
+            return 1
+        fi
+    fi
+
+    if ! dpkg -i "$tmp_deb"; then
+        echo -e "${SNELL_YELLOW}dpkg 安装未完成，尝试修复依赖...${SNELL_RESET}"
+        apt -f install -y || { rm -f "$tmp_deb"; return 1; }
+        dpkg -i "$tmp_deb" || { rm -f "$tmp_deb"; return 1; }
+    fi
+    rm -f "$tmp_deb"
+    return 0
+}
+
+snellv6_install_runtime_compat_for_error() {
+    local error_text="$1"
+    local handled=1
+
+    if echo "$error_text" | grep -q "libcares.so.2"; then
+        if ! command -v apt >/dev/null 2>&1; then
+            echo -e "${SNELL_RED}缺少 libcares.so.2，但当前系统没有 apt，无法自动安装 libc-ares2。${SNELL_RESET}"
+            return 1
+        fi
+        echo -e "${SNELL_YELLOW}检测到缺少 libcares.so.2，正在安装 libc-ares2...${SNELL_RESET}"
+        apt install -y libc-ares2 || return 1
+        handled=0
+    fi
+
+    if echo "$error_text" | grep -q "libsodium.so.23"; then
+        if ! command -v apt >/dev/null 2>&1; then
+            echo -e "${SNELL_RED}缺少 libsodium.so.23，但当前系统没有 apt，无法自动安装 libsodium23。${SNELL_RESET}"
+            return 1
+        fi
+        echo -e "${SNELL_YELLOW}检测到缺少 libsodium.so.23，正在安装 libsodium23...${SNELL_RESET}"
+        apt install -y libsodium23 || return 1
+        handled=0
+    fi
+
+    if echo "$error_text" | grep -Eq "libcrypto.so.1.1|libssl.so.1.1"; then
+        snellv6_install_legacy_libssl11 || return 1
+        handled=0
+    fi
+
+    [ "$handled" -eq 0 ]
+}
+
+snellv6_ensure_binary_runnable() {
+    local bin="${1:-$SNELLV6_BIN}"
+    local attempt
+
+    for attempt in 1 2 3 4 5; do
+        if snellv6_check_binary_runnable "$bin"; then
+            return 0
+        fi
+
+        echo -e "${SNELL_RED}Snell v6 二进制运行自检失败：${SNELL_RESET}"
+        echo "$SNELLV6_LAST_CHECK_ERROR"
+        if ! snellv6_install_runtime_compat_for_error "$SNELLV6_LAST_CHECK_ERROR"; then
+            echo -e "${SNELL_RED}无法自动补齐 Snell v6 Beta 运行依赖，已停止安装。${SNELL_RESET}"
+            return 1
+        fi
+    done
+
+    echo -e "${SNELL_RED}补齐兼容依赖后 Snell v6 仍无法运行，已停止安装。${SNELL_RESET}"
+    return 1
+}
+
 # 当前所有 v6 端口（去重升序 CSV）
 snellv6_current_ports_csv() {
     local unit port ports
@@ -9197,6 +9332,41 @@ EOF
         # 读失败：不写 runtime（持久化文件已就绪，下次重启/v5 操作会生效）
     fi
     return 0
+}
+
+# 从当前 runtime ip_local_reserved_ports 中移除指定 v6 端口；只删精确端口，不拆第三方端口段
+snellv6_remove_ports_from_runtime() {
+    local remove_csv="$1"
+    local cur new
+
+    [ -n "$remove_csv" ] || return 0
+    if ! cur=$(sysctl -n net.ipv4.ip_local_reserved_ports 2>/dev/null); then
+        return 0
+    fi
+
+    new=$(printf '%s\n' "$cur" | tr ',' '\n' | awk -v remove_csv="$remove_csv" '
+        BEGIN {
+            split(remove_csv, ports, ",")
+            for (i in ports) {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", ports[i])
+                if (ports[i] ~ /^[0-9]+$/) {
+                    remove[ports[i]] = 1
+                }
+            }
+        }
+        {
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
+            if ($0 == "") next
+            if ($0 ~ /^[0-9]+$/ && remove[$0]) next
+            keep[++count] = $0
+        }
+        END {
+            for (i = 1; i <= count; i++) {
+                printf "%s%s", (i > 1 ? "," : ""), keep[i]
+            }
+        }
+    ')
+    sysctl -w "net.ipv4.ip_local_reserved_ports=${new}" >/dev/null 2>&1 || true
 }
 
 # 把北京时间转本地时间后注册 v6 每日重启 cron（标记 # SnellV6每日重启，与 v5 的 # Snell每日重启 互不误删）
@@ -9524,6 +9694,7 @@ cleanup_partial_install_snellv6() {
         rm -f "${SNELLV6_CONF_DIR}/snell-${port}.conf"
         rm -f "${SNELLV6_CONF_DIR}/config-${port}.txt"
         systemctl daemon-reload 2>/dev/null
+        snellv6_remove_ports_from_runtime "$port" 2>/dev/null || true
         snellv6_sync_reserved_ports 2>/dev/null || true
     fi
     rm -f /tmp/snellv6-server.*.zip 2>/dev/null
@@ -9556,7 +9727,7 @@ install_snellv6() {
     fi
 
     # 下载二进制（带版本标记校验：存在且版本匹配则跳过）
-    local need_download=1
+    local need_download=1 downloaded_now=0
     if [ -f "$SNELLV6_BIN" ] && [ -f "$SNELLV6_VERSION_FILE" ] && \
        [ "$(cat "$SNELLV6_VERSION_FILE" 2>/dev/null)" = "${SNELL_V6_DEFAULT_VERSION}" ]; then
         need_download=0
@@ -9572,6 +9743,15 @@ install_snellv6() {
         fi
         rm -rf "$dl_dir"
         echo "${SNELL_V6_DEFAULT_VERSION}" > "$SNELLV6_VERSION_FILE"
+        downloaded_now=1
+    fi
+
+    echo -e "${SNELL_CYAN}正在自检 Snell v6 二进制运行环境...${SNELL_RESET}"
+    if ! snellv6_ensure_binary_runnable "$SNELLV6_BIN"; then
+        rm -f "$SNELLV6_VERSION_FILE"
+        [ "$downloaded_now" -eq 1 ] && rm -f "$SNELLV6_BIN"
+        cleanup_partial_install_snellv6 ""
+        return 1
     fi
 
     # 选端口（默认随机 30000-39999，与 v5 默认段 10000-29999 错开，撞号率归零）
@@ -9866,6 +10046,22 @@ snellv6_update_and_repair() {
     fi
     chmod +x "${SNELLV6_BIN}"
     rm -rf "$TMP_DIR"
+
+    echo -e "${SNELL_CYAN}正在自检 Snell v6 新二进制运行环境...${SNELL_RESET}"
+    if ! snellv6_ensure_binary_runnable "$SNELLV6_BIN"; then
+        echo -e "${SNELL_RED}Snell v6 新二进制不可运行，回滚到旧版本...${SNELL_RESET}"
+        if [ -f "${SNELLV6_BIN}.bak" ]; then
+            mv "${SNELLV6_BIN}.bak" "${SNELLV6_BIN}"
+            chmod +x "${SNELLV6_BIN}"
+        else
+            rm -f "${SNELLV6_BIN}"
+        fi
+        for svc_name in "${restart_targets[@]}"; do
+            systemctl start "$svc_name" 2>/dev/null
+        done
+        snellv6_release_lock
+        return 1
+    fi
     echo "${SNELL_V6_DEFAULT_VERSION}" > "$SNELLV6_VERSION_FILE"
 
     echo -e "${SNELL_GREEN}正在重启并验证 Snell v6 服务...${SNELL_RESET}"
@@ -9929,15 +10125,20 @@ uninstall_snellv6() {
             rm -f "${SNELLV6_CONF_DIR}/snell-${port_to_uninstall}.conf"
             rm -f "${SNELLV6_CONF_DIR}/config-${port_to_uninstall}.txt"
             systemctl daemon-reload
+            snellv6_remove_ports_from_runtime "$port_to_uninstall" 2>/dev/null || true
             snellv6_sync_reserved_ports || true
             echo -e "${SNELL_GREEN}v6 实例 ${port_to_uninstall} 卸载成功${SNELL_RESET}"
             ;;
         2)
             echo "正在卸载所有 Snell v6 实例..."
-            local service_file port
+            local service_file port removed_ports
+            removed_ports=""
             for service_file in /etc/systemd/system/snellv6-*.service; do
                 [ -f "$service_file" ] || continue
                 port=$(echo "$service_file" | sed -E 's/.*snellv6-([0-9]+)\.service/\1/')
+                if snell_valid_port "$port"; then
+                    removed_ports="${removed_ports:+$removed_ports,}${port}"
+                fi
                 echo "卸载端口 $port ..."
                 systemctl stop "snellv6-${port}.service"
                 systemctl disable "snellv6-${port}.service"
@@ -9948,8 +10149,9 @@ uninstall_snellv6() {
 
             rm -rf "$SNELLV6_CONF_DIR"
             rm -f "$SNELLV6_BIN"
-            # 删除 v6 保留端口文件（不动 v5；former v6 端口在 runtime 残留到下次重启，良性）
+            # 删除 v6 保留端口文件并同步清理 runtime；不动 v5 文件和 v5 端口
             rm -f "$SNELLV6_RESERVED_FILE"
+            snellv6_remove_ports_from_runtime "$removed_ports" 2>/dev/null || true
             # 清理 v6 每日重启 wrapper + cron（精确标记 SnellV6每日重启，不碰 v5 的 Snell每日重启）
             rm -f "$SNELLV6_DAILY_WRAPPER"
             if command -v crontab >/dev/null 2>&1; then
