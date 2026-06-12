@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.1.3 更新: Snell v6 的 libssl1.1 兼容包改为官方源+snapshot 永久存档双源、双架构强制 SHA256 校验、装后确认 libcrypto.so.1.1，彻底解决点版本升级后链接 404 (by Eric86777)
 # v5.1.2 更新: Snell v6 二进制自检改用 ldd 检测缺库（零执行/不卡死/一次列全），--help 探测加 timeout 兜底，去掉会误判的「No such file」匹配 (by Eric86777)
 # v5.1.1 更新: Snell v6 安装增加二进制运行自检；缺运行库时自动/提示安装测试兼容依赖，并清理失败残留端口 (by Eric86777)
 # v5.1.0 更新: Snell 菜单新增「12-8 v6 Beta 测试专区」：独立二进制/服务/配置/保留端口，与 v5 完全隔离，含装/卸/查/更新+修复/健康检查 (by Eric86777)
 # v5.0.6 更新: 代码质量大扫除：Snell 下载逻辑合并去重+unzip 完整性校验、版本号常量化、删除死代码/死变量、修复 15 处引号分词隐患、Xray 子脚本错误处理加固 (by Eric86777)
-# v5.0.5 更新: 修复 bbr 快捷命令在存在异常 ~/.curlrc/Authorization 配置时可能 curl 401 的问题，别名改用 curl -q (by Eric86777)
 
-SCRIPT_VERSION="5.1.2"
-SCRIPT_LAST_UPDATE="Snell v6 二进制自检改用 ldd（不卡死、一次列全缺库），--help 加 timeout 兜底"
+SCRIPT_VERSION="5.1.3"
+SCRIPT_LAST_UPDATE="Snell v6 libssl1.1 兼容包：官方+snapshot 永久双源、双架构 SHA256 校验、装后确认"
 #=============================================================================
 
 #=============================================================================
@@ -9189,28 +9189,46 @@ snellv6_check_binary_runnable() {
     return 0
 }
 
+# 下载并安装 libssl1.1（libcrypto.so.1.1）兼容包，供 Snell v6 Beta 二进制使用。
+# 钉死 Debian bullseye-security 的 1.1.1w-0+deb11u7：
+#   - 官方源（security.debian.org）作主链接（快），点版本被升级后会 404；
+#   - snapshot.debian.org 内容寻址永久存档作兜底（永不失效），与官方源同一文件、同一 SHA256；
+#   - 双架构均强制 SHA256 校验（防篡改/防下到错版本），校验不过一律不安装。
+# 该兼容包只放置 libcrypto.so.1.1 / libssl.so.1.1，不触碰系统现有的 OpenSSL 3.x。
 snellv6_install_legacy_libssl11() {
-    local arch deb_url deb_sha tmp_deb confirm
-    arch=$(dpkg --print-architecture 2>/dev/null || echo "")
+    local arch deb_sha tmp_deb confirm src got
+    local -a deb_urls=()
 
+    # 已存在则直接成功（幂等，避免重复下载/重复弹窗）
+    if command -v ldconfig >/dev/null 2>&1 && ldconfig -p 2>/dev/null | grep -q 'libcrypto\.so\.1\.1'; then
+        return 0
+    fi
+
+    arch=$(dpkg --print-architecture 2>/dev/null || echo "")
     case "$arch" in
         amd64)
-            deb_url="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_amd64.deb"
+            deb_urls=(
+                "https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_amd64.deb"
+                "https://snapshot.debian.org/file/3afa3716311cd1bf90a0473efddc5a29509749fd"
+            )
             deb_sha="e1ae82de5cefb8c24023ae12ae5c150787c6c9d8c03f305f076ff44067776b3c"
             ;;
         arm64)
-            deb_url="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_arm64.deb"
-            deb_sha=""
+            deb_urls=(
+                "https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u7_arm64.deb"
+                "https://snapshot.debian.org/file/f79fba0b7393181172b78abc0e202045f84d940d"
+            )
+            deb_sha="670c5f5439eefb3b669f3f051b958e4e5973f97dc781653781e516df8c5ffae8"
             ;;
         *)
-            echo -e "${SNELL_RED}当前架构 ${arch:-未知} 暂不支持自动安装 libssl1.1 兼容包。${SNELL_RESET}"
+            echo -e "${SNELL_RED}当前架构 ${arch:-未知} 暂不支持自动安装 libssl1.1 兼容包（仅 amd64 / arm64）。${SNELL_RESET}"
             return 1
             ;;
     esac
 
     echo -e "${SNELL_YELLOW}检测到 Snell v6 Beta 需要旧版 OpenSSL 1.1 运行库（libcrypto.so.1.1）。${SNELL_RESET}"
-    echo -e "${SNELL_YELLOW}Debian 12 默认不再内置该库；为测试 v6，可安装 Debian bullseye-security 的 libssl1.1 兼容包。${SNELL_RESET}"
-    echo -e "${SNELL_YELLOW}这只用于 Snell v6 Beta 测试，若你介意旧运行库，请选择 N 并等待官方更新无依赖二进制。${SNELL_RESET}"
+    echo -e "${SNELL_YELLOW}Debian 12/13 默认不再内置该库；为测试 v6，可安装 Debian bullseye-security 的 libssl1.1 兼容包。${SNELL_RESET}"
+    echo -e "${SNELL_YELLOW}该包仅提供 libcrypto.so.1.1 / libssl.so.1.1，不影响系统现有 OpenSSL 3.x；若介意旧运行库请选 N。${SNELL_RESET}"
     read -p "是否下载并安装 libssl1.1 兼容包以继续测试 Snell v6？[y/N]: " confirm
     case "$confirm" in
         y|Y|yes|YES) ;;
@@ -9220,20 +9238,34 @@ snellv6_install_legacy_libssl11() {
             ;;
     esac
 
-    tmp_deb=$(mktemp /tmp/snellv6-libssl1.1.XXXXXX.deb) || return 1
-    echo -e "${SNELL_GREEN}正在下载 libssl1.1 兼容包...${SNELL_RESET}"
-    if ! wget --timeout=30 --tries=3 -q --show-progress "$deb_url" -O "$tmp_deb" || [ ! -s "$tmp_deb" ]; then
-        echo -e "${SNELL_RED}下载 libssl1.1 兼容包失败。${SNELL_RESET}"
-        rm -f "$tmp_deb"
+    if ! command -v sha256sum >/dev/null 2>&1; then
+        echo -e "${SNELL_RED}缺少 sha256sum，无法校验兼容包完整性，已中止。${SNELL_RESET}"
         return 1
     fi
 
-    if [ -n "$deb_sha" ] && command -v sha256sum >/dev/null 2>&1; then
-        if ! printf '%s  %s\n' "$deb_sha" "$tmp_deb" | sha256sum -c - >/dev/null 2>&1; then
-            echo -e "${SNELL_RED}libssl1.1 兼容包校验失败，已中止。${SNELL_RESET}"
-            rm -f "$tmp_deb"
-            return 1
+    tmp_deb=$(mktemp /tmp/snellv6-libssl1.1.XXXXXX.deb) || return 1
+
+    # 依次尝试官方源 -> snapshot 永久源；每个源下完都强制核对 SHA256，过了才用
+    local downloaded_ok=0
+    for src in "${deb_urls[@]}"; do
+        echo -e "${SNELL_GREEN}正在下载 libssl1.1 兼容包: ${src}${SNELL_RESET}"
+        if wget --timeout=30 --tries=3 -q --show-progress "$src" -O "$tmp_deb" && [ -s "$tmp_deb" ]; then
+            got=$(sha256sum "$tmp_deb" 2>/dev/null | awk '{print $1}')
+            if [ "$got" = "$deb_sha" ]; then
+                downloaded_ok=1
+                break
+            else
+                echo -e "${SNELL_YELLOW}该源文件 SHA256 不匹配（得到 ${got:-空}），尝试下一个源...${SNELL_RESET}"
+            fi
+        else
+            echo -e "${SNELL_YELLOW}该源下载失败，尝试下一个源...${SNELL_RESET}"
         fi
+    done
+
+    if [ "$downloaded_ok" -ne 1 ]; then
+        echo -e "${SNELL_RED}libssl1.1 兼容包下载或校验失败（所有源均未通过），已中止。${SNELL_RESET}"
+        rm -f "$tmp_deb"
+        return 1
     fi
 
     if ! dpkg -i "$tmp_deb"; then
@@ -9242,6 +9274,13 @@ snellv6_install_legacy_libssl11() {
         dpkg -i "$tmp_deb" || { rm -f "$tmp_deb"; return 1; }
     fi
     rm -f "$tmp_deb"
+
+    # 刷新动态库缓存并确认 libcrypto.so.1.1 已就位
+    ldconfig 2>/dev/null || true
+    if command -v ldconfig >/dev/null 2>&1 && ! ldconfig -p 2>/dev/null | grep -q 'libcrypto\.so\.1\.1'; then
+        echo -e "${SNELL_RED}已安装 libssl1.1 兼容包，但仍未检测到 libcrypto.so.1.1，请检查。${SNELL_RESET}"
+        return 1
+    fi
     return 0
 }
 

@@ -1,10 +1,10 @@
-# BBR v3 优化脚本 - Ultimate Edition v5.1.2
+# BBR v3 优化脚本 - Ultimate Edition v5.1.3
 
 **XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**
 
 一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 32 项实用功能，优化你的 VPS 服务器。
 
-> **版本**: v5.1.2 🔧 **修复**：Snell v6 Beta 二进制自检改用 ldd 检测缺库（不执行二进制、不卡死、一次列全所有缺失运行库），缺库时自动/提示补齐 libc-ares2 / libssl1.1 等测试兼容依赖，避免创建 systemd 后立即崩溃
+> **版本**: v5.1.3 🔧 **修复**：Snell v6 Beta 二进制自检改用 ldd 检测缺库（不执行二进制、不卡死、一次列全所有缺失运行库），自动补齐 libc-ares2；libssl1.1 兼容包改为官方源 + snapshot 永久存档双源、双架构强制 SHA256 校验、装后确认 libcrypto.so.1.1，彻底解决 Debian 点版本升级后下载链接失效问题
 
 ---
 
