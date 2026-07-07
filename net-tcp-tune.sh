@@ -8,14 +8,14 @@
 # 1. 正式版本迭代时修改 SCRIPT_VERSION，并更新版本备注（保留最新5条）
 # 2. 临时热修/不发版时只修改 SCRIPT_LAST_UPDATE，用于快速识别脚本是否已更新
 #=============================================================================
+# v5.4.0 更新: 精简 AI 代理工具箱(移除 Antigravity/OpenClaw/CLIProxyAPI/Codex Console/OAI2 共5个模块)；新增菜单33「端口流量计费与到期管理」(nftables计数/配额+tc限速+到期自动停机+可选Resend邮件通知) (by Eric86777)
 # v5.3.0 更新: Snell 主菜单(菜单12)进入时自动检查 v5/v6 有无新版本（每天联网一次+缓存秒回+并行探测+失败静默），结果显示在菜单顶部；v6 专区手动「检查更新」改为强制刷新 (by Eric86777)
 # v5.2.0 更新: Snell v6 专区新增「检查更新」(菜单 12-8-6)，探测官方有无比内置更新的 v6 版本并给出升级引导；官方无版本清单接口故用有限窗口递增探测 (by Eric86777)
 # v5.1.8 更新: Snell v6 默认内核 6.0.0b1 → 6.0.0b2（官方 b2 修复了 b1 的速度回退）；已装 v6 的机器跑「更新 v6 内核 + 一键修复」生效，客户端需对应支持 b2 的 Surge beta (by Eric86777)
 # v5.1.7 更新: 撤回 v5.1.6 的 tfo=true（实测部分线路 TCP Fast Open 兼容性差，导致首包卡顿/偶发掉线），节点行回退到仅 reuse=true (by Eric86777)
-# v5.1.6 更新: Snell v5/v6 输出的客户端节点行补上 tfo=true（TCP Fast Open，新建连接省 1 个 RTT；服务端 tcp_fastopen=3 已由功能3配置）(by Eric86777)
 
-SCRIPT_VERSION="5.3.0"
-SCRIPT_LAST_UPDATE="Snell 主菜单自动检查 v5/v6 新版本(每日缓存)"
+SCRIPT_VERSION="5.4.0"
+SCRIPT_LAST_UPDATE="新增端口流量计费与到期管理(菜单33)；精简AI工具箱"
 #=============================================================================
 
 #=============================================================================
@@ -6352,60 +6352,40 @@ ai_proxy_menu() {
         echo -e "${gl_kjlan}  AI 代理服务工具箱${gl_bai}"
         echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
         echo ""
-        echo "1. Antigravity Claude Proxy 部署管理"
-        echo "2. Open WebUI 部署管理"
-        echo "3. CRS 部署管理 (多账户中转/拼车)"
-        echo "4. Fuclaude 部署管理 (Claude网页版共享)"
-        echo "5. Sub2API 部署管理"
-        echo "6. Caddy 多域名反代"
-        echo "7. Cloudflare Tunnel 管理 🆕"
-        echo "8. OpenClaw 部署管理 (AI多渠道消息网关)"
-        echo "9. OpenAI Responses API 转换代理"
-        echo "10. Codex Console 部署管理 (OpenAI批量注册)"
-        echo "11. CLIProxyAPI 部署管理 (CLI转API代理)"
-        echo "12. OAI2 部署管理 (令牌注册面板)"
+        echo "1. Open WebUI 部署管理"
+        echo "2. CRS 部署管理 (多账户中转/拼车)"
+        echo "3. Fuclaude 部署管理 (Claude网页版共享)"
+        echo "4. Sub2API 部署管理"
+        echo "5. Caddy 多域名反代"
+        echo "6. Cloudflare Tunnel 管理 🆕"
+        echo "7. OpenAI Responses API 转换代理"
         echo ""
         echo "0. 返回主菜单"
         echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
 
-        read -e -p "请选择操作 [0-12]: " choice
+        read -e -p "请选择操作 [0-7]: " choice
 
         case $choice in
             1)
-                manage_ag_proxy
-                ;;
-            2)
                 manage_open_webui
                 ;;
-            3)
+            2)
                 manage_crs
                 ;;
-            4)
+            3)
                 manage_fuclaude
                 ;;
-            5)
+            4)
                 manage_sub2api
                 ;;
-            6)
+            5)
                 manage_caddy
                 ;;
-            7)
+            6)
                 manage_cf_tunnel
                 ;;
-            8)
-                manage_openclaw
-                ;;
-            9)
+            7)
                 manage_resp_proxy
-                ;;
-            10)
-                manage_codex_console
-                ;;
-            11)
-                manage_cliproxyapi
-                ;;
-            12)
-                manage_oai2
                 ;;
             0)
                 return
@@ -6574,6 +6554,9 @@ show_main_menu() {
     echo -e "${gl_kjlan}━━━━━━━━━ AI 代理服务 ━━━━━━━━━${gl_bai}"
     echo "32. AI代理工具箱 ▶ (Claude/WebUI/CRS/Fuclaude/Caddy/CF-Tunnel) ⭐ 推荐"
     echo ""
+    echo -e "${gl_kjlan}━━━━━━━━━ 流量与端口管理 ━━━━━━━━━${gl_bai}"
+    echo "33. 端口流量计费与到期管理 🆕"
+    echo ""
     echo -e "${gl_kjlan}━━━━━━━━━ 一键优化 ━━━━━━━━━${gl_bai}"
     echo "66. ⭐ 一键全自动优化 (BBR v3 + 网络调优)"
     echo ""
@@ -6693,6 +6676,9 @@ show_main_menu() {
             ;;
         32)
             ai_proxy_menu
+            ;;
+        33)
+            ptm_menu
             ;;
         66)
             one_click_optimize
@@ -17747,821 +17733,6 @@ manage_reverse_proxy() {
     done
 }
 
-#=============================================================================
-# Antigravity Claude Proxy 部署管理
-#=============================================================================
-
-# 固定配置
-AG_PROXY_SERVICE_NAME="ag-proxy"
-AG_PROXY_INSTALL_DIR="/root/antigravity-claude-proxy"
-AG_PROXY_PORT="8080"
-AG_PROXY_REPO="https://github.com/badri-s2001/antigravity-claude-proxy.git"
-AG_PROXY_SERVICE_FILE="/etc/systemd/system/ag-proxy.service"
-AG_PROXY_PORT_FILE="/root/antigravity-claude-proxy/.ag-proxy-port"
-
-# 获取当前配置的端口
-ag_proxy_get_port() {
-    if [ -f "$AG_PROXY_PORT_FILE" ]; then
-        cat "$AG_PROXY_PORT_FILE"
-    else
-        echo "$AG_PROXY_PORT"
-    fi
-}
-
-# 检查端口是否可用
-ag_proxy_check_port() {
-    local port=$1
-    if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-        return 1
-    fi
-    return 0
-}
-
-# 检测 Antigravity Claude Proxy 状态
-ag_proxy_check_status() {
-    if [ ! -d "$AG_PROXY_INSTALL_DIR" ]; then
-        echo "not_installed"
-    elif ! systemctl is-enabled "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo "installed_no_service"
-    elif systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo "running"
-    else
-        echo "stopped"
-    fi
-}
-
-# 检测并安装 Node.js
-ag_proxy_install_nodejs() {
-    echo -e "${gl_kjlan}[1/6] 检测 Node.js 环境...${gl_bai}"
-
-    if command -v node &>/dev/null; then
-        local node_version=$(node -v | sed 's/v//' | cut -d. -f1)
-        if [ "$node_version" -ge 20 ]; then
-            echo -e "${gl_lv}✅ Node.js $(node -v) 已安装${gl_bai}"
-            return 0
-        else
-            echo -e "${gl_huang}⚠ Node.js 版本过低 ($(node -v))，需要 20+${gl_bai}"
-        fi
-    else
-        echo -e "${gl_huang}⚠ Node.js 未安装${gl_bai}"
-    fi
-
-    echo "正在安装 Node.js 20..."
-
-    # 检测系统类型
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        local os_id="${ID,,}"
-    fi
-
-    # 安全下载并执行设置脚本（避免 curl | bash 漏洞）
-    local setup_script=$(mktemp)
-    local script_url=""
-
-    if [[ "$os_id" == "debian" || "$os_id" == "ubuntu" ]]; then
-        script_url="https://deb.nodesource.com/setup_20.x"
-    elif [[ "$os_id" == "centos" || "$os_id" == "rhel" || "$os_id" == "fedora" || "$os_id" == "rocky" || "$os_id" == "alma" ]]; then
-        script_url="https://rpm.nodesource.com/setup_20.x"
-    fi
-
-    if [ -n "$script_url" ]; then
-        # 下载脚本
-        if ! curl -fsSL --connect-timeout 15 --max-time 60 "$script_url" -o "$setup_script" 2>/dev/null; then
-            echo -e "${gl_hong}❌ 下载 Node.js 设置脚本失败${gl_bai}"
-            rm -f "$setup_script"
-            return 1
-        fi
-
-        # 验证脚本格式（必须是 shell 脚本）
-        if ! head -1 "$setup_script" | grep -q "^#!"; then
-            echo -e "${gl_hong}❌ 脚本格式验证失败${gl_bai}"
-            rm -f "$setup_script"
-            return 1
-        fi
-
-        # 执行脚本
-        chmod +x "$setup_script"
-        bash "$setup_script" >/dev/null 2>&1
-        rm -f "$setup_script"
-    fi
-
-    if [[ "$os_id" == "debian" || "$os_id" == "ubuntu" ]]; then
-        apt-get install -y nodejs >/dev/null 2>&1
-    elif [[ "$os_id" == "centos" || "$os_id" == "rhel" || "$os_id" == "fedora" || "$os_id" == "rocky" || "$os_id" == "alma" ]]; then
-        if command -v dnf &>/dev/null; then
-            dnf install -y nodejs >/dev/null 2>&1
-        else
-            yum install -y nodejs >/dev/null 2>&1
-        fi
-    else
-        echo -e "${gl_hong}❌ 不支持的系统，请手动安装 Node.js 20+${gl_bai}"
-        return 1
-    fi
-
-    if command -v node &>/dev/null; then
-        echo -e "${gl_lv}✅ Node.js $(node -v) 安装成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ Node.js 安装失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 克隆项目
-ag_proxy_clone_repo() {
-    echo -e "${gl_kjlan}[2/6] 拉取项目代码...${gl_bai}"
-
-    if [ -d "$AG_PROXY_INSTALL_DIR" ]; then
-        echo -e "${gl_huang}⚠ 项目目录已存在，正在更新...${gl_bai}"
-        cd "$AG_PROXY_INSTALL_DIR" || return 1
-        git pull >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            echo -e "${gl_lv}✅ 代码更新成功${gl_bai}"
-            return 0
-        else
-            echo -e "${gl_hong}❌ 代码更新失败，尝试重新克隆...${gl_bai}"
-            cd /root || return 1
-            rm -rf "$AG_PROXY_INSTALL_DIR"
-        fi
-    fi
-
-    # 安装 git（如果没有）
-    if ! command -v git &>/dev/null; then
-        echo "正在安装 git..."
-        if command -v apt-get &>/dev/null; then
-            apt-get update -qq && apt-get install -y git >/dev/null 2>&1
-        elif command -v dnf &>/dev/null; then
-            dnf install -y git >/dev/null 2>&1
-        elif command -v yum &>/dev/null; then
-            yum install -y git >/dev/null 2>&1
-        fi
-    fi
-
-    git clone "$AG_PROXY_REPO" "$AG_PROXY_INSTALL_DIR" >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo -e "${gl_lv}✅ 项目克隆成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ 项目克隆失败，请检查网络连接${gl_bai}"
-        return 1
-    fi
-}
-
-# 安装依赖
-ag_proxy_install_deps() {
-    echo -e "${gl_kjlan}[3/6] 安装项目依赖...${gl_bai}"
-
-    cd "$AG_PROXY_INSTALL_DIR" || return 1
-
-    # 先检查 package.json 是否存在
-    if [ ! -f "package.json" ]; then
-        echo -e "${gl_hong}❌ package.json 不存在，项目可能未正确克隆${gl_bai}"
-        return 1
-    fi
-
-    # 检查并安装编译工具（better-sqlite3 需要）
-    echo "检测编译工具..."
-    local need_build_tools=false
-
-    if ! command -v make &>/dev/null; then
-        echo "  make: 未安装"
-        need_build_tools=true
-    else
-        echo "  make: 已安装"
-    fi
-
-    if ! command -v g++ &>/dev/null; then
-        echo "  g++: 未安装"
-        need_build_tools=true
-    else
-        echo "  g++: 已安装"
-    fi
-
-    if [ "$need_build_tools" = true ]; then
-        echo ""
-        echo "正在安装编译工具（make, g++, python3）..."
-        if command -v apt-get &>/dev/null; then
-            apt-get update -qq
-            apt-get install -y build-essential python3
-        elif command -v dnf &>/dev/null; then
-            dnf install -y make gcc-c++ python3
-        elif command -v yum &>/dev/null; then
-            yum install -y make gcc-c++ python3
-        fi
-
-        # 验证安装
-        if command -v make &>/dev/null && command -v g++ &>/dev/null; then
-            echo -e "${gl_lv}✅ 编译工具安装成功${gl_bai}"
-        else
-            echo -e "${gl_hong}❌ 编译工具安装失败，请手动安装: apt install build-essential${gl_bai}"
-            return 1
-        fi
-    fi
-
-    echo ""
-    # 安装依赖，显示进度
-    echo "正在执行 npm install（可能需要几分钟）..."
-    npm install 2>&1 | tail -30
-
-    if [ ${PIPESTATUS[0]} -eq 0 ]; then
-        echo -e "${gl_lv}✅ 依赖安装成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ 依赖安装失败，请检查上方错误信息${gl_bai}"
-        return 1
-    fi
-}
-
-# 配置端口
-ag_proxy_configure_port() {
-    echo -e "${gl_kjlan}[4/6] 配置服务端口...${gl_bai}"
-
-    local port="$AG_PROXY_PORT"
-    read -e -p "请输入访问端口 [$AG_PROXY_PORT]: " input_port
-    if [ -n "$input_port" ]; then
-        port="$input_port"
-    fi
-
-    # 检查端口是否可用
-    while ! ag_proxy_check_port "$port"; do
-        echo -e "${gl_hong}⚠️ 端口 $port 已被占用，请换一个${gl_bai}"
-        read -e -p "请输入访问端口: " port
-        if [ -z "$port" ]; then
-            port="$AG_PROXY_PORT"
-        fi
-    done
-    echo -e "${gl_lv}✅ 端口 $port 可用${gl_bai}"
-
-    # 保存端口配置
-    mkdir -p "$(dirname "$AG_PROXY_PORT_FILE")"
-    echo "$port" > "$AG_PROXY_PORT_FILE"
-    return 0
-}
-
-# 创建 systemd 服务
-ag_proxy_create_service() {
-    local port=$(ag_proxy_get_port)
-    echo -e "${gl_kjlan}[5/6] 创建 systemd 服务...${gl_bai}"
-
-    cat > "$AG_PROXY_SERVICE_FILE" <<EOF
-[Unit]
-Description=Antigravity Claude Proxy
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=${AG_PROXY_INSTALL_DIR}
-Environment=PORT=${port}
-ExecStart=/usr/bin/npm start
-Restart=always
-RestartSec=3
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-
-    if [ -f "$AG_PROXY_SERVICE_FILE" ]; then
-        echo -e "${gl_lv}✅ 服务文件创建成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ 服务文件创建失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 启动服务
-ag_proxy_start_service() {
-    echo -e "${gl_kjlan}[6/6] 启动服务...${gl_bai}"
-
-    systemctl enable "$AG_PROXY_SERVICE_NAME" >/dev/null 2>&1
-    systemctl start "$AG_PROXY_SERVICE_NAME"
-
-    sleep 2
-
-    if systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务启动成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-        echo "查看日志: journalctl -u $AG_PROXY_SERVICE_NAME -n 20"
-        return 1
-    fi
-}
-
-# 一键部署
-ag_proxy_deploy() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Antigravity Claude Proxy 一键部署${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(ag_proxy_check_status)
-    if [ "$status" = "running" ]; then
-        echo -e "${gl_huang}⚠ 服务已在运行中${gl_bai}"
-        echo ""
-        read -e -p "是否重新部署？(Y/N): " confirm
-        case "$confirm" in
-            [Yy]) ;;
-            *) return ;;
-        esac
-        echo ""
-        systemctl stop "$AG_PROXY_SERVICE_NAME" 2>/dev/null
-    fi
-
-    # 执行部署步骤
-    ag_proxy_install_nodejs || { break_end; return 1; }
-    echo ""
-    ag_proxy_clone_repo || { break_end; return 1; }
-    echo ""
-    ag_proxy_install_deps || { break_end; return 1; }
-    echo ""
-    ag_proxy_configure_port || { break_end; return 1; }
-    echo ""
-    ag_proxy_create_service || { break_end; return 1; }
-    echo ""
-    ag_proxy_start_service || { break_end; return 1; }
-
-    # 获取服务器 IP
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-    local port=$(ag_proxy_get_port)
-
-    echo ""
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_lv}  ✅ 部署完成！${gl_bai}"
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "访问地址: ${gl_huang}http://${server_ip}:${port}${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【第一步】添加 Google 账号${gl_bai}"
-    echo "  打开上面的地址 → Accounts → Add Account → 完成 Google 授权"
-    echo ""
-    echo -e "${gl_kjlan}【第二步】配置本地 Claude Code${gl_bai}"
-    echo "  编辑文件: ~/.claude/settings.json"
-    echo ""
-    echo "  添加以下内容（推荐配置）："
-    echo -e "${gl_huang}  {${gl_bai}"
-    echo -e "${gl_huang}    \"env\": {${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_AUTH_TOKEN\": \"test\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_BASE_URL\": \"http://${server_ip}:${port}\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_MODEL\": \"claude-opus-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_OPUS_MODEL\": \"claude-opus-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_SONNET_MODEL\": \"claude-sonnet-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_HAIKU_MODEL\": \"gemini-3-flash\",${gl_bai}"
-    echo -e "${gl_huang}      \"CLAUDE_CODE_SUBAGENT_MODEL\": \"claude-sonnet-4-5-thinking\"${gl_bai}"
-    echo -e "${gl_huang}    }${gl_bai}"
-    echo -e "${gl_huang}  }${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}说明: Opus=主力模型, Sonnet=子代理, Haiku用Gemini省额度${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【可选】通过环境变量配置（macOS/Linux）${gl_bai}"
-    echo "  将以下命令添加到 shell 配置文件："
-    echo ""
-    echo -e "${gl_huang}  echo 'export ANTHROPIC_BASE_URL=\"http://${server_ip}:${port}\"' >> ~/.zshrc${gl_bai}"
-    echo -e "${gl_huang}  echo 'export ANTHROPIC_AUTH_TOKEN=\"test\"' >> ~/.zshrc${gl_bai}"
-    echo -e "${gl_huang}  source ~/.zshrc${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}提示: Bash 用户请将 ~/.zshrc 替换为 ~/.bashrc${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【第三步】重启 Claude Code${gl_bai}"
-    echo "  关闭并重新打开终端，然后运行 claude 即可"
-    echo ""
-    echo -e "${gl_zi}提示: 更多模型选项请访问 WebUI 的 Settings 页面${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}管理命令:${gl_bai}"
-    echo "  状态: systemctl status $AG_PROXY_SERVICE_NAME"
-    echo "  日志: journalctl -u $AG_PROXY_SERVICE_NAME -f"
-    echo "  重启: systemctl restart $AG_PROXY_SERVICE_NAME"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}命令行添加账号（无法访问 Web 时使用）:${gl_bai}"
-    echo ""
-    echo "  # 1. 停止服务"
-    echo "  systemctl stop $AG_PROXY_SERVICE_NAME"
-    echo ""
-    echo "  # 2. 添加账号（按提示在浏览器中打开链接完成 Google 授权）"
-    echo "  cd $AG_PROXY_INSTALL_DIR && npx antigravity-claude-proxy accounts add --no-browser"
-    echo ""
-    echo "  # 3. 重新启动服务"
-    echo "  systemctl start $AG_PROXY_SERVICE_NAME"
-    echo ""
-
-    break_end
-}
-
-# 查看配置指引
-ag_proxy_show_config() {
-    clear
-
-    if [ ! -d "$AG_PROXY_INSTALL_DIR" ]; then
-        echo -e "${gl_hong}❌ 项目未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 获取服务器 IP 和端口
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-    local port=$(ag_proxy_get_port)
-
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Claude Code 本地配置指引${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "访问地址: ${gl_huang}http://${server_ip}:${port}${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【第一步】添加 Google 账号${gl_bai}"
-    echo "  打开上面的地址 → Accounts → Add Account → 完成 Google 授权"
-    echo ""
-    echo -e "${gl_kjlan}【第二步】配置本地 Claude Code${gl_bai}"
-    echo "  编辑文件: ~/.claude/settings.json"
-    echo ""
-    echo "  添加以下内容（推荐配置）："
-    echo -e "${gl_huang}  {${gl_bai}"
-    echo -e "${gl_huang}    \"env\": {${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_AUTH_TOKEN\": \"test\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_BASE_URL\": \"http://${server_ip}:${port}\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_MODEL\": \"claude-opus-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_OPUS_MODEL\": \"claude-opus-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_SONNET_MODEL\": \"claude-sonnet-4-5-thinking\",${gl_bai}"
-    echo -e "${gl_huang}      \"ANTHROPIC_DEFAULT_HAIKU_MODEL\": \"gemini-3-flash\",${gl_bai}"
-    echo -e "${gl_huang}      \"CLAUDE_CODE_SUBAGENT_MODEL\": \"claude-sonnet-4-5-thinking\"${gl_bai}"
-    echo -e "${gl_huang}    }${gl_bai}"
-    echo -e "${gl_huang}  }${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}说明: Opus=主力模型, Sonnet=子代理, Haiku用Gemini省额度${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【可选】通过环境变量配置（macOS/Linux）${gl_bai}"
-    echo "  将以下命令添加到 shell 配置文件："
-    echo ""
-    echo -e "${gl_huang}  echo 'export ANTHROPIC_BASE_URL=\"http://${server_ip}:${port}\"' >> ~/.zshrc${gl_bai}"
-    echo -e "${gl_huang}  echo 'export ANTHROPIC_AUTH_TOKEN=\"test\"' >> ~/.zshrc${gl_bai}"
-    echo -e "${gl_huang}  source ~/.zshrc${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}提示: Bash 用户请将 ~/.zshrc 替换为 ~/.bashrc${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【第三步】重启 Claude Code${gl_bai}"
-    echo "  关闭并重新打开终端，然后运行 claude 即可"
-    echo ""
-    echo -e "${gl_zi}提示: 更多模型选项请访问 WebUI 的 Settings 页面${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}管理命令:${gl_bai}"
-    echo "  状态: systemctl status $AG_PROXY_SERVICE_NAME"
-    echo "  日志: journalctl -u $AG_PROXY_SERVICE_NAME -f"
-    echo "  重启: systemctl restart $AG_PROXY_SERVICE_NAME"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}命令行添加账号（无法访问 Web 时使用）:${gl_bai}"
-    echo ""
-    echo "  # 1. 停止服务"
-    echo "  systemctl stop $AG_PROXY_SERVICE_NAME"
-    echo ""
-    echo "  # 2. 添加账号（按提示在浏览器中打开链接完成 Google 授权）"
-    echo "  cd $AG_PROXY_INSTALL_DIR && npx antigravity-claude-proxy accounts add --no-browser"
-    echo ""
-    echo "  # 3. 重新启动服务"
-    echo "  systemctl start $AG_PROXY_SERVICE_NAME"
-    echo ""
-
-    break_end
-}
-
-# 更新项目
-ag_proxy_update() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  更新 Antigravity Claude Proxy${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if [ ! -d "$AG_PROXY_INSTALL_DIR" ]; then
-        echo -e "${gl_hong}❌ 项目未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo "正在拉取最新代码..."
-    cd "$AG_PROXY_INSTALL_DIR" || return 1
-    git pull
-
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "正在更新依赖..."
-        npm install --production >/dev/null 2>&1
-
-        echo ""
-        echo "正在重启服务..."
-        systemctl restart "$AG_PROXY_SERVICE_NAME"
-
-        sleep 2
-
-        if systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-            echo ""
-            echo -e "${gl_lv}✅ 更新完成，服务已重启${gl_bai}"
-
-            # 显示版本信息
-            if [ -f "$AG_PROXY_INSTALL_DIR/package.json" ]; then
-                local version=$(sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' "$AG_PROXY_INSTALL_DIR/package.json" | head -1)
-                if [ -n "$version" ]; then
-                    echo -e "当前版本: ${gl_huang}v${version}${gl_bai}"
-                fi
-            fi
-        else
-            echo -e "${gl_hong}❌ 服务重启失败${gl_bai}"
-        fi
-    else
-        echo -e "${gl_hong}❌ 代码更新失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 查看状态
-ag_proxy_status() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Antigravity Claude Proxy 服务状态${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    systemctl status "$AG_PROXY_SERVICE_NAME" --no-pager
-
-    echo ""
-    break_end
-}
-
-# 查看日志
-ag_proxy_logs() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Antigravity Claude Proxy 日志（按 Ctrl+C 退出）${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    journalctl -u "$AG_PROXY_SERVICE_NAME" -f
-}
-
-# 启动服务
-ag_proxy_start() {
-    echo "正在启动服务..."
-    systemctl start "$AG_PROXY_SERVICE_NAME"
-    sleep 2
-
-    if systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已启动${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 停止服务
-ag_proxy_stop() {
-    echo "正在停止服务..."
-    systemctl stop "$AG_PROXY_SERVICE_NAME"
-
-    if ! systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已停止${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务停止失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 重启服务
-ag_proxy_restart() {
-    echo "正在重启服务..."
-
-    # 检测端口冲突
-    local port=$(ag_proxy_get_port)
-    local pid=$(ss -lntp 2>/dev/null | grep ":${port} " | sed -nE 's/.*pid=([0-9]+).*/\1/p' | head -1)
-    local service_pid=$(systemctl show -p MainPID "$AG_PROXY_SERVICE_NAME" 2>/dev/null | cut -d= -f2)
-
-    # 如果端口被其他进程占用（不是当前服务）
-    if [ -n "$pid" ] && [ "$pid" != "$service_pid" ] && [ "$pid" != "0" ]; then
-        echo -e "${gl_huang}⚠ 端口 ${port} 被 PID ${pid} 占用，正在释放...${gl_bai}"
-        kill "$pid" 2>/dev/null
-        sleep 1
-        if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-            kill -9 "$pid" 2>/dev/null
-            sleep 1
-        fi
-    fi
-
-    systemctl restart "$AG_PROXY_SERVICE_NAME"
-    sleep 2
-
-    if systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务重启失败${gl_bai}"
-        echo "查看日志: journalctl -u $AG_PROXY_SERVICE_NAME -n 20"
-    fi
-
-    break_end
-}
-
-# 修改端口
-ag_proxy_change_port() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  修改 Antigravity Claude Proxy 端口${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local current_port=$(ag_proxy_get_port)
-    echo -e "当前端口: ${gl_huang}${current_port}${gl_bai}"
-    echo ""
-
-    read -e -p "请输入新端口 (1-65535): " new_port
-
-    # 验证端口
-    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
-        echo -e "${gl_hong}❌ 无效的端口号${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    if [ "$new_port" = "$current_port" ]; then
-        echo -e "${gl_huang}⚠ 端口未改变${gl_bai}"
-        break_end
-        return 0
-    fi
-
-    # 检查新端口是否被占用
-    if ss -lntp 2>/dev/null | grep -q ":${new_port} "; then
-        echo -e "${gl_hong}❌ 端口 ${new_port} 已被占用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo ""
-    echo "正在修改端口..."
-
-    # 停止服务
-    systemctl stop "$AG_PROXY_SERVICE_NAME" 2>/dev/null
-
-    # 更新服务文件
-    sed -i "s/Environment=PORT=.*/Environment=PORT=${new_port}/" "$AG_PROXY_SERVICE_FILE"
-
-    # 保存端口配置
-    echo "$new_port" > "$AG_PROXY_PORT_FILE"
-
-    # 重新加载并启动
-    systemctl daemon-reload
-    systemctl start "$AG_PROXY_SERVICE_NAME"
-
-    sleep 2
-
-    if systemctl is-active "$AG_PROXY_SERVICE_NAME" &>/dev/null; then
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 端口已修改为 ${new_port}${gl_bai}"
-        echo -e "新访问地址: ${gl_huang}http://${server_ip}:${new_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 卸载
-ag_proxy_uninstall() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}  卸载 Antigravity Claude Proxy${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "${gl_huang}警告: 此操作将删除服务和所有项目文件！${gl_bai}"
-    echo ""
-
-    read -e -p "确认卸载？(输入 yes 确认): " confirm
-
-    if [ "$confirm" != "yes" ]; then
-        echo "已取消"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在停止服务..."
-    systemctl stop "$AG_PROXY_SERVICE_NAME" 2>/dev/null
-    systemctl disable "$AG_PROXY_SERVICE_NAME" 2>/dev/null
-
-    echo "正在删除服务文件..."
-    rm -f "$AG_PROXY_SERVICE_FILE"
-    systemctl daemon-reload
-
-    echo "正在删除项目文件..."
-    rm -rf "$AG_PROXY_INSTALL_DIR"
-
-    echo ""
-    echo -e "${gl_lv}✅ 卸载完成${gl_bai}"
-
-    break_end
-}
-
-# Antigravity Claude Proxy 主菜单
-manage_ag_proxy() {
-    while true; do
-        clear
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  Antigravity Claude Proxy 部署管理${gl_bai}"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo ""
-
-        # 显示当前状态
-        local status=$(ag_proxy_check_status)
-        local port=$(ag_proxy_get_port)
-
-        case "$status" in
-            "not_installed")
-                echo -e "当前状态: ${gl_huang}⚠️ 未安装${gl_bai}"
-                ;;
-            "installed_no_service")
-                echo -e "当前状态: ${gl_huang}⚠️ 已安装但服务未配置${gl_bai}"
-                ;;
-            "running")
-                echo -e "当前状态: ${gl_lv}✅ 运行中${gl_bai} (端口: ${port})"
-                ;;
-            "stopped")
-                echo -e "当前状态: ${gl_hong}❌ 已停止${gl_bai}"
-                ;;
-        esac
-
-        echo ""
-        echo -e "${gl_kjlan}[部署与更新]${gl_bai}"
-        echo "1. 一键部署（首次安装）"
-        echo "2. 更新项目"
-        echo ""
-        echo -e "${gl_kjlan}[服务管理]${gl_bai}"
-        echo "3. 查看状态"
-        echo "4. 查看日志"
-        echo "5. 启动服务"
-        echo "6. 停止服务"
-        echo "7. 重启服务"
-        echo ""
-        echo -e "${gl_kjlan}[配置与卸载]${gl_bai}"
-        echo "8. 修改端口"
-        echo -e "${gl_hong}9. 卸载（删除服务+代码）${gl_bai}"
-        echo ""
-        echo -e "${gl_kjlan}[帮助]${gl_bai}"
-        echo "10. 查看 Claude Code 配置指引"
-        echo ""
-        echo "0. 返回主菜单"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择操作 [0-10]: " choice
-
-        case $choice in
-            1)
-                ag_proxy_deploy
-                ;;
-            2)
-                ag_proxy_update
-                ;;
-            3)
-                ag_proxy_status
-                ;;
-            4)
-                ag_proxy_logs
-                ;;
-            5)
-                ag_proxy_start
-                ;;
-            6)
-                ag_proxy_stop
-                ;;
-            7)
-                ag_proxy_restart
-                ;;
-            8)
-                ag_proxy_change_port
-                ;;
-            9)
-                ag_proxy_uninstall
-                ;;
-            10)
-                ag_proxy_show_config
-                ;;
-            0)
-                return
-                ;;
-            *)
-                echo "无效的选择"
-                sleep 2
-                ;;
-        esac
-    done
-}
-
 # =====================================================
 # Open WebUI 部署管理 (菜单40)
 # =====================================================
@@ -23149,2135 +22320,6 @@ caddy_cf_firewall_toggle() {
     fi
 }
 
-# =====================================================
-# OpenClaw 部署管理 (AI多渠道消息网关)
-# =====================================================
-
-# 常量定义
-OPENCLAW_SERVICE_NAME="openclaw-gateway"
-OPENCLAW_HOME_DIR="${HOME}/.openclaw"
-OPENCLAW_CONFIG_FILE="${HOME}/.openclaw/openclaw.json"
-OPENCLAW_ENV_FILE="${HOME}/.openclaw/.env"
-OPENCLAW_DEFAULT_PORT="18789"
-
-# 检测 OpenClaw 状态
-openclaw_check_status() {
-    if ! command -v openclaw &>/dev/null; then
-        echo "not_installed"
-    elif systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo "running"
-    elif systemctl is-enabled "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo "stopped"
-    else
-        echo "installed_no_service"
-    fi
-}
-
-# 获取当前端口
-openclaw_get_port() {
-    if [ -f "$OPENCLAW_CONFIG_FILE" ]; then
-        # 兼容 JSON5 格式（key 无引号: port: 19966）和标准 JSON（"port": 19966）
-        local port=$(sed -nE 's/.*"?port"?[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' "$OPENCLAW_CONFIG_FILE" 2>/dev/null | head -1)
-        if [ -n "$port" ]; then
-            echo "$port"
-            return
-        fi
-    fi
-    echo "$OPENCLAW_DEFAULT_PORT"
-}
-
-# 检查端口是否可用
-openclaw_check_port() {
-    local port=$1
-    if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-        return 1
-    fi
-    return 0
-}
-
-# 检测并安装 Node.js 22+
-openclaw_install_nodejs() {
-    echo -e "${gl_kjlan}[1/5] 检测 Node.js 环境...${gl_bai}"
-
-    if command -v node &>/dev/null; then
-        local node_version=$(node -v | sed 's/v//' | cut -d. -f1)
-        if [ "$node_version" -ge 22 ]; then
-            echo -e "${gl_lv}✅ Node.js $(node -v) 已安装${gl_bai}"
-            return 0
-        else
-            echo -e "${gl_huang}⚠ Node.js 版本过低 ($(node -v))，OpenClaw 需要 22+${gl_bai}"
-        fi
-    else
-        echo -e "${gl_huang}⚠ Node.js 未安装${gl_bai}"
-    fi
-
-    echo "正在安装 Node.js 22..."
-
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        local os_id="${ID,,}"
-    fi
-
-    local setup_script=$(mktemp)
-    local script_url=""
-
-    if [[ "$os_id" == "debian" || "$os_id" == "ubuntu" ]]; then
-        script_url="https://deb.nodesource.com/setup_22.x"
-    elif [[ "$os_id" == "centos" || "$os_id" == "rhel" || "$os_id" == "fedora" || "$os_id" == "rocky" || "$os_id" == "alma" ]]; then
-        script_url="https://rpm.nodesource.com/setup_22.x"
-    fi
-
-    if [ -n "$script_url" ]; then
-        if ! curl -fsSL --connect-timeout 15 --max-time 60 "$script_url" -o "$setup_script" 2>/dev/null; then
-            echo -e "${gl_hong}❌ 下载 Node.js 设置脚本失败${gl_bai}"
-            rm -f "$setup_script"
-            return 1
-        fi
-
-        if ! head -1 "$setup_script" | grep -q "^#!"; then
-            echo -e "${gl_hong}❌ 脚本格式验证失败${gl_bai}"
-            rm -f "$setup_script"
-            return 1
-        fi
-
-        chmod +x "$setup_script"
-        bash "$setup_script" >/dev/null 2>&1
-        rm -f "$setup_script"
-    fi
-
-    if [[ "$os_id" == "debian" || "$os_id" == "ubuntu" ]]; then
-        apt-get install -y nodejs >/dev/null 2>&1
-    elif [[ "$os_id" == "centos" || "$os_id" == "rhel" || "$os_id" == "fedora" || "$os_id" == "rocky" || "$os_id" == "alma" ]]; then
-        if command -v dnf &>/dev/null; then
-            dnf install -y nodejs >/dev/null 2>&1
-        else
-            yum install -y nodejs >/dev/null 2>&1
-        fi
-    else
-        echo -e "${gl_hong}❌ 不支持的系统，请手动安装 Node.js 22+${gl_bai}"
-        return 1
-    fi
-
-    if command -v node &>/dev/null; then
-        local installed_ver=$(node -v | sed 's/v//' | cut -d. -f1)
-        if [ "$installed_ver" -ge 22 ]; then
-            echo -e "${gl_lv}✅ Node.js $(node -v) 安装成功${gl_bai}"
-            return 0
-        else
-            echo -e "${gl_hong}❌ 安装的 Node.js 版本仍低于 22，请手动升级${gl_bai}"
-            return 1
-        fi
-    else
-        echo -e "${gl_hong}❌ Node.js 安装失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 安装 OpenClaw
-openclaw_install_pkg() {
-    echo -e "${gl_kjlan}[2/5] 安装 OpenClaw...${gl_bai}"
-    echo -e "${gl_hui}正在下载并安装，可能需要 1-3 分钟...${gl_bai}"
-    echo ""
-
-    npm install -g openclaw@latest --loglevel info
-
-    if command -v openclaw &>/dev/null; then
-        local ver=$(openclaw --version 2>/dev/null || echo "unknown")
-        echo -e "${gl_lv}✅ OpenClaw ${ver} 安装成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ OpenClaw 安装失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 交互式模型配置
-openclaw_config_model() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 模型配置${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    # 步骤1: 选择 API 来源
-    echo -e "${gl_kjlan}[步骤1] 选择你的 API 来源${gl_bai}"
-    echo ""
-    echo -e "${gl_lv}── 已验证可用的反代 ──${gl_bai}"
-    echo "1. CRS 反代 (Claude)         — anthropic-messages 协议"
-    echo "2. sub2api 反代 (Gemini)      — google-generative-ai 协议"
-    echo "3. sub2api 反代 (GPT)         — openai-responses 协议"
-    echo "4. sub2api Antigravity (Claude) — anthropic-messages 协议"
-    echo ""
-    echo -e "${gl_huang}── 通用配置 ──${gl_bai}"
-    echo "5. Anthropic 直连反代（自建 Nginx/Caddy 反代）"
-    echo "6. OpenAI 兼容中转（new-api / one-api / LiteLLM 等）"
-    echo "7. OpenRouter"
-    echo "8. Google Gemini 反代（其他 Gemini 代理）"
-    echo ""
-    echo -e "${gl_zi}── 官方直连 ──${gl_bai}"
-    echo "9. Anthropic 官方 API Key"
-    echo "10. Google Gemini 官方 API Key"
-    echo "11. OpenAI 官方 API Key"
-    echo ""
-    read -e -p "请选择 [1-11]: " api_choice
-
-    local api_type=""
-    local base_url=""
-    local provider_name="my-proxy"
-    local need_base_url=true
-    local preset_mode=""  # crs / sub2api-gemini / sub2api-gpt / sub2api-antigravity / 空=手动
-
-    case "$api_choice" in
-        1)
-            # CRS 反代 (Claude) - 已验证
-            preset_mode="crs"
-            api_type="anthropic-messages"
-            provider_name="crs-claude"
-            echo ""
-            echo -e "${gl_lv}已选择: CRS 反代 (Claude)${gl_bai}"
-            echo -e "${gl_zi}协议: anthropic-messages | 只需输入 CRS 地址和 API Key${gl_bai}"
-            echo ""
-            echo -e "${gl_zi}地址格式示例: http://IP:端口/api${gl_bai}"
-            echo -e "${gl_zi}Key 格式示例: cr_xxxx...${gl_bai}"
-            ;;
-        2)
-            # sub2api 反代 (Gemini) - 已验证
-            preset_mode="sub2api-gemini"
-            api_type="google-generative-ai"
-            provider_name="sub2api-gemini"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api 反代 (Gemini)${gl_bai}"
-            echo -e "${gl_zi}协议: google-generative-ai | 只需输入 sub2api 地址和 API Key${gl_bai}"
-            echo ""
-            echo -e "${gl_zi}地址格式示例: https://你的sub2api域名${gl_bai}"
-            echo -e "${gl_zi}Key 格式示例: sk-xxxx...（Gemini 专用 Key）${gl_bai}"
-            echo -e "${gl_huang}注意: sub2api 的 Claude Key 因凭证限制无法用于 OpenClaw，只有 Gemini Key 可用${gl_bai}"
-            ;;
-        3)
-            # sub2api 反代 (GPT) - 已验证
-            preset_mode="sub2api-gpt"
-            api_type="openai-responses"
-            provider_name="sub2api-gpt"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api 反代 (GPT)${gl_bai}"
-            echo -e "${gl_zi}协议: openai-responses | 只需输入 sub2api 地址和 API Key${gl_bai}"
-            echo ""
-            echo -e "${gl_zi}地址格式示例: https://你的sub2api域名${gl_bai}"
-            echo -e "${gl_zi}Key 格式示例: sk-xxxx...（GPT 专用 Key）${gl_bai}"
-            ;;
-        4)
-            # sub2api Antigravity (Claude) - 已验证
-            preset_mode="sub2api-antigravity"
-            api_type="anthropic-messages"
-            provider_name="sub2api-antigravity"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api Antigravity (Claude)${gl_bai}"
-            echo -e "${gl_zi}协议: anthropic-messages | 支持 tools，OpenClaw 完全兼容${gl_bai}"
-            echo ""
-            echo -e "${gl_zi}地址格式示例: https://你的sub2api域名/antigravity${gl_bai}"
-            echo -e "${gl_zi}Key 格式示例: sk-xxxx...（Antigravity 专用 Key）${gl_bai}"
-            echo -e "${gl_huang}注意: 高峰期偶尔返回 503，重试即可；账户池较小${gl_bai}"
-            ;;
-        5)
-            api_type="anthropic-messages"
-            echo ""
-            echo -e "${gl_zi}提示: 反代地址一般不需要 /v1 后缀${gl_bai}"
-            echo -e "${gl_huang}注意: 使用 Claude Code 凭证的反代（如 sub2api Claude）无法用于 OpenClaw${gl_bai}"
-            ;;
-        6)
-            api_type="openai-completions"
-            echo ""
-            echo -e "${gl_zi}提示: 中转地址一般需要 /v1 后缀${gl_bai}"
-            ;;
-        7)
-            api_type="openai-completions"
-            base_url="https://openrouter.ai/api/v1"
-            provider_name="openrouter"
-            need_base_url=false
-            echo ""
-            echo -e "${gl_lv}已预填 OpenRouter 地址: ${base_url}${gl_bai}"
-            ;;
-        8)
-            api_type="google-generative-ai"
-            echo ""
-            echo -e "${gl_zi}提示: Gemini 反代地址会自动添加 /v1beta 后缀${gl_bai}"
-            ;;
-        9)
-            api_type="anthropic-messages"
-            base_url="https://api.anthropic.com"
-            provider_name="anthropic"
-            need_base_url=false
-            echo ""
-            echo -e "${gl_lv}使用 Anthropic 官方 API${gl_bai}"
-            ;;
-        10)
-            api_type="google-generative-ai"
-            base_url="https://generativelanguage.googleapis.com/v1beta"
-            provider_name="google"
-            need_base_url=false
-            echo ""
-            echo -e "${gl_lv}使用 Google Gemini 官方 API${gl_bai}"
-            ;;
-        11)
-            api_type="openai-responses"
-            base_url="https://api.openai.com/v1"
-            provider_name="openai"
-            need_base_url=false
-            echo ""
-            echo -e "${gl_lv}使用 OpenAI 官方 API${gl_bai}"
-            ;;
-        *)
-            echo -e "${gl_hong}无效选择${gl_bai}"
-            break_end
-            return 1
-            ;;
-    esac
-
-    # 步骤2: 输入反代地址
-    if [ "$need_base_url" = true ]; then
-        echo ""
-        echo -e "${gl_kjlan}[步骤2] 输入反代地址${gl_bai}"
-        if [ "$preset_mode" = "crs" ]; then
-            echo -e "${gl_zi}示例: http://IP:端口/api（CRS 默认格式）${gl_bai}"
-        elif [ "$preset_mode" = "sub2api-gemini" ]; then
-            echo -e "${gl_zi}示例: https://你的sub2api域名（/v1beta 会自动添加）${gl_bai}"
-        elif [ "$preset_mode" = "sub2api-gpt" ]; then
-            echo -e "${gl_zi}示例: https://你的sub2api域名（/v1 会自动添加）${gl_bai}"
-        elif [ "$preset_mode" = "sub2api-antigravity" ]; then
-            echo -e "${gl_zi}示例: https://你的sub2api域名/antigravity（路径需包含 /antigravity）${gl_bai}"
-        elif [ "$api_type" = "google-generative-ai" ]; then
-            echo -e "${gl_zi}示例: https://your-proxy.com（/v1beta 会自动添加）${gl_bai}"
-        else
-            echo -e "${gl_zi}示例: https://your-proxy.com 或 https://your-proxy.com/v1${gl_bai}"
-        fi
-        echo ""
-        read -e -p "反代地址: " base_url
-        if [ -z "$base_url" ]; then
-            echo -e "${gl_hong}❌ 反代地址不能为空${gl_bai}"
-            break_end
-            return 1
-        fi
-        # 去除末尾的 /
-        base_url="${base_url%/}"
-        # 自动添加 API 路径后缀
-        if [ "$api_type" = "google-generative-ai" ]; then
-            if [[ ! "$base_url" =~ /v1beta$ ]] && [[ ! "$base_url" =~ /v1$ ]]; then
-                base_url="${base_url}/v1beta"
-                echo -e "${gl_lv}已自动添加后缀: ${base_url}${gl_bai}"
-            fi
-        elif [ "$preset_mode" = "sub2api-gpt" ]; then
-            if [[ ! "$base_url" =~ /v1$ ]]; then
-                base_url="${base_url}/v1"
-                echo -e "${gl_lv}已自动添加后缀: ${base_url}${gl_bai}"
-            fi
-        fi
-    fi
-
-    # 步骤3: 输入 API Key
-    echo ""
-    echo -e "${gl_kjlan}[步骤3] 输入 API Key${gl_bai}"
-    if [ "$preset_mode" = "crs" ]; then
-        echo -e "${gl_zi}CRS Key 格式: cr_xxxx...${gl_bai}"
-    elif [ "$preset_mode" = "sub2api-gemini" ]; then
-        echo -e "${gl_zi}sub2api Gemini Key 格式: sk-xxxx...${gl_bai}"
-    elif [ "$preset_mode" = "sub2api-gpt" ]; then
-        echo -e "${gl_zi}sub2api GPT Key 格式: sk-xxxx...${gl_bai}"
-    elif [ "$preset_mode" = "sub2api-antigravity" ]; then
-        echo -e "${gl_zi}sub2api Antigravity Key 格式: sk-xxxx...${gl_bai}"
-    fi
-    echo ""
-    read -e -p "API Key: " api_key
-    if [ -z "$api_key" ]; then
-        echo -e "${gl_hong}❌ API Key 不能为空${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 步骤4: 选择模型
-    echo ""
-    echo -e "${gl_kjlan}[步骤4] 选择主力模型${gl_bai}"
-    echo ""
-
-    local model_id=""
-    local model_name=""
-    local model_reasoning="false"
-    local model_input='["text"]'
-    local model_cost_input="3"
-    local model_cost_output="15"
-    local model_cost_cache_read="0.3"
-    local model_cost_cache_write="3.75"
-    local model_context="200000"
-    local model_max_tokens="16384"
-
-    if [ "$preset_mode" = "sub2api-antigravity" ]; then
-        echo "1. claude-sonnet-4-6 (推荐)"
-        echo "2. claude-sonnet-4-5"
-        echo "3. claude-sonnet-4-5-thinking (扩展思考)"
-        echo "4. claude-opus-4-5-thinking (最强思考)"
-        echo "5. 自定义模型 ID"
-        echo ""
-        read -e -p "请选择 [1-5]: " model_choice
-        case "$model_choice" in
-            1) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-            2) model_id="claude-sonnet-4-5"; model_name="Claude Sonnet 4.5" ;;
-            3) model_id="claude-sonnet-4-5-thinking"; model_name="Claude Sonnet 4.5 Thinking"; model_reasoning="true"; model_input='["text", "image"]' ;;
-            4) model_id="claude-opus-4-5-thinking"; model_name="Claude Opus 4.5 Thinking"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="15"; model_cost_output="75"; model_cost_cache_read="1.5"; model_cost_cache_write="18.75"; model_max_tokens="32768" ;;
-            5)
-                read -e -p "输入模型 ID: " model_id
-                read -e -p "输入模型显示名称: " model_name
-                ;;
-            *) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-        esac
-    elif [ "$api_type" = "anthropic-messages" ]; then
-        echo "1. claude-opus-4-6 (Opus 4.6 最强)"
-        echo "2. claude-sonnet-4-6 (Sonnet 4.6 推荐)"
-        echo "3. claude-sonnet-4-5 (Sonnet 4.5 上一代)"
-        echo "4. claude-haiku-4-5 (Haiku 4.5 快速)"
-        echo "5. 自定义模型 ID"
-        echo ""
-        read -e -p "请选择 [1-5]: " model_choice
-        case "$model_choice" in
-            1) model_id="claude-opus-4-6"; model_name="Claude Opus 4.6"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="15"; model_cost_output="75"; model_cost_cache_read="1.5"; model_cost_cache_write="18.75"; model_max_tokens="32768" ;;
-            2) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-            3) model_id="claude-sonnet-4-5"; model_name="Claude Sonnet 4.5" ;;
-            4) model_id="claude-haiku-4-5"; model_name="Claude Haiku 4.5"; model_cost_input="0.8"; model_cost_output="4"; model_cost_cache_read="0.08"; model_cost_cache_write="1" ;;
-            5)
-                read -e -p "输入模型 ID: " model_id
-                read -e -p "输入模型显示名称: " model_name
-                ;;
-            *) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-        esac
-    elif [ "$api_type" = "google-generative-ai" ]; then
-        echo "1. gemini-3.1-pro-preview (最新旗舰)"
-        echo "2. gemini-3.1-flash-lite (最便宜)"
-        echo "3. gemini-3-flash-preview (快速)"
-        echo "4. gemini-2.5-pro (推理增强)"
-        echo "5. gemini-2.5-flash (快速均衡)"
-        echo "6. 自定义模型 ID"
-        echo ""
-        read -e -p "请选择 [1-6]: " model_choice
-        case "$model_choice" in
-            1) model_id="gemini-3.1-pro-preview"; model_name="Gemini 3.1 Pro Preview"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="12"; model_cost_cache_read="0.5"; model_cost_cache_write="6"; model_context="1000000"; model_max_tokens="65536" ;;
-            2) model_id="gemini-3.1-flash-lite"; model_name="Gemini 3.1 Flash Lite"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="0.25"; model_cost_output="1.5"; model_cost_cache_read="0.0625"; model_cost_cache_write="0.375"; model_context="1000000"; model_max_tokens="65536" ;;
-            3) model_id="gemini-3-flash-preview"; model_name="Gemini 3 Flash Preview"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="0.15"; model_cost_output="0.6"; model_cost_cache_read="0.0375"; model_cost_cache_write="1"; model_context="1000000"; model_max_tokens="65536" ;;
-            4) model_id="gemini-2.5-pro"; model_name="Gemini 2.5 Pro"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="1.25"; model_cost_output="10"; model_cost_cache_read="0.315"; model_cost_cache_write="4.5"; model_context="1000000"; model_max_tokens="65536" ;;
-            5) model_id="gemini-2.5-flash"; model_name="Gemini 2.5 Flash"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="0.15"; model_cost_output="0.6"; model_cost_cache_read="0.0375"; model_cost_cache_write="1"; model_context="1000000"; model_max_tokens="65536" ;;
-            6)
-                read -e -p "输入模型 ID: " model_id
-                read -e -p "输入模型显示名称: " model_name
-                model_reasoning="true"; model_input='["text", "image"]'; model_context="1000000"; model_max_tokens="65536"
-                ;;
-            *) model_id="gemini-3.1-pro-preview"; model_name="Gemini 3.1 Pro Preview"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="12"; model_cost_cache_read="0.5"; model_cost_cache_write="6"; model_context="1000000"; model_max_tokens="65536" ;;
-        esac
-    elif [ "$api_type" = "openai-responses" ]; then
-        echo "1. gpt-5.4 (最新旗舰)"
-        echo "2. gpt-5.4-pro (Pro 最强)"
-        echo "3. gpt-5.3-instant (快速)"
-        echo "4. gpt-5.3"
-        echo "5. gpt-5.3-codex"
-        echo "6. gpt-5.2"
-        echo "7. gpt-5.2-codex"
-        echo "8. 自定义模型 ID"
-        echo ""
-        read -e -p "请选择 [1-8]: " model_choice
-        case "$model_choice" in
-            1) model_id="gpt-5.4"; model_name="GPT 5.4"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2.5"; model_cost_output="15"; model_cost_cache_read="0.625"; model_cost_cache_write="2.5"; model_context="1050000"; model_max_tokens="128000" ;;
-            2) model_id="gpt-5.4-pro"; model_name="GPT 5.4 Pro"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="15"; model_cost_output="75"; model_cost_cache_read="3.75"; model_cost_cache_write="15"; model_context="1050000"; model_max_tokens="128000" ;;
-            3) model_id="gpt-5.3-instant"; model_name="GPT 5.3 Instant"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="0.5"; model_cost_output="2"; model_cost_cache_read="0.125"; model_cost_cache_write="0.5"; model_max_tokens="32768" ;;
-            4) model_id="gpt-5.3"; model_name="GPT 5.3"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="8"; model_cost_cache_read="0.5"; model_cost_cache_write="2"; model_max_tokens="32768" ;;
-            5) model_id="gpt-5.3-codex"; model_name="GPT 5.3 Codex"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="8"; model_cost_cache_read="0.5"; model_cost_cache_write="2"; model_max_tokens="32768" ;;
-            6) model_id="gpt-5.2"; model_name="GPT 5.2"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="8"; model_cost_cache_read="0.5"; model_cost_cache_write="2"; model_max_tokens="32768" ;;
-            7) model_id="gpt-5.2-codex"; model_name="GPT 5.2 Codex"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2"; model_cost_output="8"; model_cost_cache_read="0.5"; model_cost_cache_write="2"; model_max_tokens="32768" ;;
-            8)
-                read -e -p "输入模型 ID: " model_id
-                read -e -p "输入模型显示名称: " model_name
-                model_reasoning="true"; model_input='["text", "image"]'; model_max_tokens="32768"
-                ;;
-            *) model_id="gpt-5.4"; model_name="GPT 5.4"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2.5"; model_cost_output="15"; model_cost_cache_read="0.625"; model_cost_cache_write="2.5"; model_context="1050000"; model_max_tokens="128000" ;;
-        esac
-    elif [ "$api_type" = "openai-completions" ]; then
-        echo "1. claude-opus-4-6 (通过中转)"
-        echo "2. claude-sonnet-4-6 (通过中转)"
-        echo "3. gpt-5.4 (通过中转)"
-        echo "4. gpt-4o"
-        echo "5. 自定义模型 ID"
-        echo ""
-        read -e -p "请选择 [1-5]: " model_choice
-        case "$model_choice" in
-            1) model_id="claude-opus-4-6"; model_name="Claude Opus 4.6"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="15"; model_cost_output="75"; model_cost_cache_read="1.5"; model_cost_cache_write="18.75"; model_max_tokens="32768" ;;
-            2) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-            3) model_id="gpt-5.4"; model_name="GPT 5.4"; model_reasoning="true"; model_input='["text", "image"]'; model_cost_input="2.5"; model_cost_output="15"; model_cost_cache_read="0.625"; model_cost_cache_write="2.5"; model_context="1050000"; model_max_tokens="128000" ;;
-            4) model_id="gpt-4o"; model_name="GPT-4o"; model_input='["text", "image"]'; model_cost_input="2.5"; model_cost_output="10"; model_cost_cache_read="1.25"; model_cost_cache_write="2.5"; model_context="128000"; model_max_tokens="16384" ;;
-            5)
-                read -e -p "输入模型 ID: " model_id
-                read -e -p "输入模型显示名称: " model_name
-                ;;
-            *) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6"; model_reasoning="true"; model_input='["text", "image"]' ;;
-        esac
-    fi
-
-    if [ -z "$model_id" ]; then
-        echo -e "${gl_hong}❌ 模型 ID 不能为空${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 步骤5: 选择端口
-    echo ""
-    echo -e "${gl_kjlan}[步骤5] 设置网关端口${gl_bai}"
-    local port="$OPENCLAW_DEFAULT_PORT"
-    read -e -p "网关端口 [${OPENCLAW_DEFAULT_PORT}]: " input_port
-    if [ -n "$input_port" ]; then
-        port="$input_port"
-    fi
-
-    # 生成配置
-    echo ""
-    echo -e "${gl_kjlan}正在生成配置...${gl_bai}"
-
-    mkdir -p "$OPENCLAW_HOME_DIR"
-
-    # 生成网关 token
-    local gateway_token=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
-
-    # 写入环境变量
-    cat > "$OPENCLAW_ENV_FILE" <<EOF
-# OpenClaw 环境变量 - 由部署脚本自动生成
-OPENCLAW_API_KEY=${api_key}
-OPENCLAW_GATEWAY_TOKEN=${gateway_token}
-EOF
-    chmod 600 "$OPENCLAW_ENV_FILE"
-
-    # 生成 openclaw.json 配置（JSON5 格式）
-    cat > "$OPENCLAW_CONFIG_FILE" <<EOF
-// OpenClaw 配置 - 由部署脚本自动生成
-// 文档: https://docs.openclaw.ai/gateway/configuration
-{
-  // 网关设置
-  gateway: {
-    port: ${port},
-    mode: "local",
-    auth: {
-      token: "${gateway_token}"
-    }
-  },
-
-  // 模型配置
-  models: {
-    mode: "merge",
-    providers: {
-      "${provider_name}": {
-        baseUrl: "${base_url}",
-        apiKey: "\${OPENCLAW_API_KEY}",
-        api: "${api_type}",
-        models: [
-          { id: "${model_id}", name: "${model_name}", reasoning: ${model_reasoning}, input: ${model_input}, cost: { input: ${model_cost_input}, output: ${model_cost_output}, cacheRead: ${model_cost_cache_read}, cacheWrite: ${model_cost_cache_write} }, contextWindow: ${model_context}, maxTokens: ${model_max_tokens} }
-        ]
-      }
-    }
-  },
-
-  // Agent 默认配置
-  agents: {
-    defaults: {
-      model: {
-        primary: "${provider_name}/${model_id}"
-      }
-    }
-  }
-}
-EOF
-    chmod 600 "$OPENCLAW_CONFIG_FILE"
-    chmod 700 "$OPENCLAW_HOME_DIR"
-
-    echo -e "${gl_lv}✅ 配置文件已生成${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}配置文件: ${OPENCLAW_CONFIG_FILE}${gl_bai}"
-    echo -e "${gl_zi}环境变量: ${OPENCLAW_ENV_FILE}${gl_bai}"
-    echo ""
-
-    # 显示配置摘要
-    echo -e "${gl_kjlan}━━━ 配置摘要 ━━━${gl_bai}"
-    if [ -n "$preset_mode" ]; then
-        echo -e "配置预设:   ${gl_lv}${preset_mode}（已验证可用）${gl_bai}"
-    fi
-    echo -e "API 类型:   ${gl_huang}${api_type}${gl_bai}"
-    echo -e "反代地址:   ${gl_huang}${base_url}${gl_bai}"
-    echo -e "主力模型:   ${gl_huang}${provider_name}/${model_id}${gl_bai}"
-    echo -e "模型名称:   ${gl_huang}${model_name}${gl_bai}"
-    echo -e "网关端口:   ${gl_huang}${port}${gl_bai}"
-    echo -e "网关Token:  ${gl_huang}${gateway_token}${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-    return 0
-}
-
-# 检测当前配置是否需要 sub2api 兼容补丁
-# 条件: 使用 openai-responses API 且 baseUrl 不是 OpenAI 官方
-# 返回 0 = 需要补丁, 1 = 不需要
-openclaw_needs_patch() {
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        return 1
-    fi
-    if ! command -v node &>/dev/null; then
-        return 1
-    fi
-
-    local result
-    result=$(node -e "
-        const fs = require('fs');
-        try {
-            const content = fs.readFileSync('${OPENCLAW_CONFIG_FILE}', 'utf-8');
-            const config = new Function('return (' + content + ')')();
-            const providers = (config.models && config.models.providers) || {};
-            for (const [name, p] of Object.entries(providers)) {
-                if (p.api === 'openai-responses' && p.baseUrl && !p.baseUrl.includes('api.openai.com')) {
-                    console.log('yes');
-                    process.exit(0);
-                }
-            }
-        } catch(e) {}
-        console.log('no');
-    " 2>/dev/null)
-
-    if [ "$result" = "yes" ]; then
-        return 0
-    fi
-    return 1
-}
-
-# 为 sub2api 打 openai-responses.js 兼容补丁
-# 补丁1: 添加 instructions 字段 (sub2api 必需)
-# 补丁2: 移除 max_output_tokens (sub2api 不支持)
-# 幂等: 已打过的补丁自动跳过
-openclaw_patch_sub2api() {
-    echo ""
-    echo -e "${gl_kjlan}正在检查 sub2api 兼容补丁...${gl_bai}"
-
-    # 定位 openclaw 安装目录
-    local openclaw_root=""
-    local npm_root
-    npm_root=$(npm root -g 2>/dev/null)
-    if [ -n "$npm_root" ] && [ -d "${npm_root}/openclaw" ]; then
-        openclaw_root="${npm_root}/openclaw"
-    elif [ -d "/usr/lib/node_modules/openclaw" ]; then
-        openclaw_root="/usr/lib/node_modules/openclaw"
-    elif [ -d "/usr/local/lib/node_modules/openclaw" ]; then
-        openclaw_root="/usr/local/lib/node_modules/openclaw"
-    fi
-
-    if [ -z "$openclaw_root" ]; then
-        echo -e "${gl_hong}❌ 找不到 openclaw 安装目录，跳过补丁${gl_bai}"
-        return 1
-    fi
-
-    local patch_file="${openclaw_root}/node_modules/@mariozechner/pi-ai/dist/providers/openai-responses.js"
-
-    if [ ! -f "$patch_file" ]; then
-        echo -e "${gl_huang}⚠ 未找到 openai-responses.js，可能 openclaw 版本已更新文件结构${gl_bai}"
-        echo -e "${gl_zi}  路径: ${patch_file}${gl_bai}"
-        return 1
-    fi
-
-    # 备份
-    cp "$patch_file" "${patch_file}.bak" 2>/dev/null
-
-    local patch_count=0
-
-    # 补丁 1: 添加 instructions 字段
-    if grep -q 'instructions: context\.systemPrompt' "$patch_file"; then
-        echo -e "${gl_lv}  ✅ 补丁 1/2: instructions 已存在，跳过${gl_bai}"
-        patch_count=$((patch_count + 1))
-    else
-        sed -i 's/        input: messages,/        input: messages,\n        instructions: context.systemPrompt || "You are a helpful assistant.",/' "$patch_file"
-        if grep -q 'instructions: context\.systemPrompt' "$patch_file"; then
-            echo -e "${gl_lv}  ✅ 补丁 1/2: 添加 instructions 字段${gl_bai}"
-            patch_count=$((patch_count + 1))
-        else
-            echo -e "${gl_hong}  ❌ 补丁 1/2: instructions 字段添加失败${gl_bai}"
-        fi
-    fi
-
-    # 补丁 2: 非 OpenAI 官方 API 时删除 max_output_tokens
-    if grep -q 'delete params\.max_output_tokens' "$patch_file"; then
-        echo -e "${gl_lv}  ✅ 补丁 2/2: max_output_tokens 补丁已存在，跳过${gl_bai}"
-        patch_count=$((patch_count + 1))
-    else
-        sed -i '/const openaiStream = await client\.responses\.create/i\            // sub2api compat: remove max_output_tokens\n            if (model.baseUrl \&\& !model.baseUrl.includes("api.openai.com")) {\n                delete params.max_output_tokens;\n            }' "$patch_file"
-        if grep -q 'delete params\.max_output_tokens' "$patch_file"; then
-            echo -e "${gl_lv}  ✅ 补丁 2/2: 移除 max_output_tokens${gl_bai}"
-            patch_count=$((patch_count + 1))
-        else
-            echo -e "${gl_hong}  ❌ 补丁 2/2: max_output_tokens 补丁失败${gl_bai}"
-        fi
-    fi
-
-    if [ "$patch_count" -eq 2 ]; then
-        echo -e "${gl_lv}✅ sub2api 兼容补丁已就绪${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_huang}⚠ 部分补丁可能未成功 (${patch_count}/2)${gl_bai}"
-        return 1
-    fi
-}
-
-# 执行 onboard 初始化
-openclaw_onboard() {
-    local port=$(openclaw_get_port)
-    echo -e "${gl_kjlan}[5/5] 创建 systemd 服务并启动网关...${gl_bai}"
-    echo ""
-
-    # 创建必要的目录
-    mkdir -p "${OPENCLAW_HOME_DIR}/agents/main/sessions"
-    mkdir -p "${OPENCLAW_HOME_DIR}/credentials"
-    mkdir -p "${OPENCLAW_HOME_DIR}/workspace"
-
-    # 获取 openclaw 实际路径
-    local openclaw_bin=$(which openclaw 2>/dev/null || echo "/usr/bin/openclaw")
-
-    # 创建 systemd 服务
-    cat > "/etc/systemd/system/${OPENCLAW_SERVICE_NAME}.service" <<EOF
-[Unit]
-Description=OpenClaw Gateway
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=${openclaw_bin} gateway --port ${port} --verbose
-Restart=always
-RestartSec=5
-EnvironmentFile=-${HOME}/.openclaw/.env
-Environment=HOME=${HOME}
-WorkingDirectory=${HOME}
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable "$OPENCLAW_SERVICE_NAME" >/dev/null 2>&1
-    systemctl start "$OPENCLAW_SERVICE_NAME"
-
-    sleep 5
-
-    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ OpenClaw 网关已启动${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ 网关启动失败，查看日志:${gl_bai}"
-        journalctl -u "$OPENCLAW_SERVICE_NAME" -n 10 --no-pager
-        return 1
-    fi
-}
-
-# 一键部署
-openclaw_deploy() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 一键部署${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(openclaw_check_status)
-    if [ "$status" = "running" ]; then
-        echo -e "${gl_huang}⚠ OpenClaw 已在运行中${gl_bai}"
-        echo ""
-        read -e -p "是否重新部署？(Y/N): " confirm
-        case "$confirm" in
-            [Yy]) ;;
-            *) return ;;
-        esac
-        echo ""
-        systemctl stop "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-    fi
-
-    # 步骤1: Node.js
-    openclaw_install_nodejs || { break_end; return 1; }
-    echo ""
-
-    # 步骤2: 安装 OpenClaw
-    openclaw_install_pkg || { break_end; return 1; }
-    echo ""
-
-    # 步骤3: 交互式模型配置
-    echo -e "${gl_kjlan}[3/5] 配置模型与 API...${gl_bai}"
-    echo ""
-    openclaw_config_model || { break_end; return 1; }
-    echo ""
-
-    # 步骤4: sub2api 兼容补丁（如需要）
-    if openclaw_needs_patch; then
-        echo -e "${gl_kjlan}[4/5] 打 sub2api 兼容补丁...${gl_bai}"
-        openclaw_patch_sub2api
-        echo ""
-    fi
-
-    # 步骤5: 初始化并启动
-    openclaw_onboard || { break_end; return 1; }
-
-    # 获取服务器 IP
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-    local port=$(openclaw_get_port)
-
-    echo ""
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_lv}  ✅ OpenClaw 部署完成！${gl_bai}"
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "控制面板: ${gl_huang}http://${server_ip}:${port}/${gl_bai}"
-    echo ""
-
-    # 显示 gateway token
-    local gw_token=$(sed -nE 's/.*OPENCLAW_GATEWAY_TOKEN=(.*)/\1/p' "$OPENCLAW_ENV_FILE" 2>/dev/null)
-    if [ -n "$gw_token" ]; then
-        echo -e "网关 Token: ${gl_huang}${gw_token}${gl_bai}"
-        echo -e "${gl_zi}（远程访问控制面板时需要此 Token）${gl_bai}"
-        echo ""
-    fi
-
-    echo -e "${gl_kjlan}【下一步】连接消息频道${gl_bai}"
-    echo "  运行: openclaw channels login"
-    echo "  支持: WhatsApp / Telegram / Discord / Slack 等"
-    echo ""
-    echo -e "${gl_kjlan}【聊天命令】（在消息平台中使用）${gl_bai}"
-    echo "  /status  — 查看会话状态"
-    echo "  /new     — 清空上下文"
-    echo "  /think   — 调整推理级别"
-    echo ""
-    echo -e "${gl_kjlan}【安全说明】${gl_bai}"
-    echo "  网关默认绑定 loopback，外部访问需 SSH 隧道:"
-    echo -e "  ${gl_huang}ssh -N -L ${port}:127.0.0.1:${port} root@${server_ip}${gl_bai}"
-    echo "  检查安全: openclaw doctor"
-    echo ""
-    echo -e "${gl_kjlan}管理命令:${gl_bai}"
-    echo "  状态: systemctl status $OPENCLAW_SERVICE_NAME"
-    echo "  日志: journalctl -u $OPENCLAW_SERVICE_NAME -f"
-    echo "  重启: systemctl restart $OPENCLAW_SERVICE_NAME"
-    echo ""
-
-    break_end
-}
-
-# 更新 OpenClaw
-openclaw_update() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  更新 OpenClaw${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if ! command -v openclaw &>/dev/null; then
-        echo -e "${gl_hong}❌ OpenClaw 未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    local old_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-    echo -e "当前版本: ${gl_huang}${old_ver}${gl_bai}"
-    echo ""
-
-    echo "正在更新..."
-    npm install -g openclaw@latest 2>&1 | tail -10
-
-    local new_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-    echo ""
-
-    if [ "$old_ver" = "$new_ver" ]; then
-        echo -e "${gl_lv}✅ 已是最新版本 (${new_ver})${gl_bai}"
-    else
-        echo -e "${gl_lv}✅ 已更新: ${old_ver} → ${new_ver}${gl_bai}"
-    fi
-
-    # npm 更新会覆盖补丁文件，需要重新打补丁
-    if openclaw_needs_patch; then
-        openclaw_patch_sub2api
-    fi
-
-    echo ""
-    echo "正在重启服务..."
-    systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-
-    sleep 2
-    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-    else
-        echo -e "${gl_huang}⚠ 服务未通过 systemctl 管理，请手动重启${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 查看状态
-openclaw_status() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 服务状态${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if command -v openclaw &>/dev/null; then
-        echo -e "版本: ${gl_huang}$(openclaw --version 2>/dev/null || echo 'unknown')${gl_bai}"
-        echo ""
-    fi
-
-    systemctl status "$OPENCLAW_SERVICE_NAME" --no-pager 2>/dev/null || \
-        echo -e "${gl_huang}⚠ systemd 服务不存在，可能需要重新执行 onboard${gl_bai}"
-
-    echo ""
-    break_end
-}
-
-# 查看日志
-openclaw_logs() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 日志（按 Ctrl+C 退出）${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    journalctl -u "$OPENCLAW_SERVICE_NAME" -f 2>/dev/null || \
-        echo -e "${gl_huang}⚠ 无法读取日志，服务可能未通过 systemd 管理${gl_bai}"
-}
-
-# 启动服务
-openclaw_start() {
-    echo "正在启动服务..."
-    systemctl start "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-    sleep 2
-
-    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已启动${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务启动失败，查看日志: journalctl -u $OPENCLAW_SERVICE_NAME -n 20${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 停止服务
-openclaw_stop() {
-    echo "正在停止服务..."
-    systemctl stop "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-
-    if ! systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已停止${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务停止失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 重启服务
-openclaw_restart() {
-    echo "正在重启服务..."
-
-    local port=$(openclaw_get_port)
-    local pid=$(ss -lntp 2>/dev/null | grep ":${port} " | sed -nE 's/.*pid=([0-9]+).*/\1/p' | head -1)
-    local service_pid=$(systemctl show -p MainPID "$OPENCLAW_SERVICE_NAME" 2>/dev/null | cut -d= -f2)
-
-    if [ -n "$pid" ] && [ "$pid" != "$service_pid" ] && [ "$pid" != "0" ]; then
-        echo -e "${gl_huang}⚠ 端口 ${port} 被 PID ${pid} 占用，正在释放...${gl_bai}"
-        kill "$pid" 2>/dev/null
-        sleep 1
-        if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-            kill -9 "$pid" 2>/dev/null
-            sleep 1
-        fi
-    fi
-
-    systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-    sleep 2
-
-    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 服务重启失败${gl_bai}"
-        echo "查看日志: journalctl -u $OPENCLAW_SERVICE_NAME -n 20"
-    fi
-
-    break_end
-}
-
-# 更新频道配置到 openclaw.json（通过 Node.js 合并 JSON5）
-openclaw_update_channel() {
-    local channel_name="$1"
-    local channel_config_json="$2"
-
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        echo -e "${gl_hong}❌ 配置文件不存在，请先部署 OpenClaw${gl_bai}"
-        return 1
-    fi
-
-    local tmp_channel=$(mktemp)
-    local tmp_script=$(mktemp)
-    echo "$channel_config_json" > "$tmp_channel"
-
-    cat > "$tmp_script" << 'NODESCRIPT'
-const fs = require('fs');
-const configPath = process.argv[2];
-const channelName = process.argv[3];
-const channelFile = process.argv[4];
-const newChannelConfig = JSON.parse(fs.readFileSync(channelFile, 'utf-8'));
-
-const content = fs.readFileSync(configPath, 'utf-8');
-let config;
-try {
-    config = new Function('return (' + content + ')')();
-} catch(e) {
-    console.error('无法解析配置文件: ' + e.message);
-    process.exit(1);
-}
-
-if (!config.channels) config.channels = {};
-config.channels[channelName] = newChannelConfig;
-
-// 同时启用对应插件（防止 doctor --fix 禁用后无法自动恢复）
-if (!config.plugins) config.plugins = {};
-if (!config.plugins.entries) config.plugins.entries = {};
-if (!config.plugins.entries[channelName]) config.plugins.entries[channelName] = {};
-config.plugins.entries[channelName].enabled = true;
-
-const output = '// OpenClaw 配置 - 由部署脚本自动生成\n// 文档: https://docs.openclaw.ai/gateway/configuration\n' + JSON.stringify(config, null, 2) + '\n';
-fs.writeFileSync(configPath, output);
-NODESCRIPT
-
-    node "$tmp_script" "$OPENCLAW_CONFIG_FILE" "$channel_name" "$tmp_channel" 2>&1
-    local result=$?
-    rm -f "$tmp_channel" "$tmp_script"
-    return $result
-}
-
-# 从 openclaw.json 移除频道配置
-openclaw_remove_channel() {
-    local channel_name="$1"
-
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        echo "配置文件不存在"
-        return 1
-    fi
-
-    local tmp_script=$(mktemp)
-    cat > "$tmp_script" << 'NODESCRIPT'
-const fs = require('fs');
-const configPath = process.argv[2];
-const channelName = process.argv[3];
-
-const content = fs.readFileSync(configPath, 'utf-8');
-let config;
-try {
-    config = new Function('return (' + content + ')')();
-} catch(e) {
-    console.error('无法解析配置文件');
-    process.exit(1);
-}
-
-if (config.channels && config.channels[channelName]) {
-    delete config.channels[channelName];
-    // 同时禁用对应插件
-    if (config.plugins && config.plugins.entries && config.plugins.entries[channelName]) {
-        config.plugins.entries[channelName].enabled = false;
-    }
-    const output = '// OpenClaw 配置 - 由部署脚本自动生成\n// 文档: https://docs.openclaw.ai/gateway/configuration\n' + JSON.stringify(config, null, 2) + '\n';
-    fs.writeFileSync(configPath, output);
-    console.log('已移除 ' + channelName + ' 频道配置');
-} else {
-    console.log('频道 ' + channelName + ' 未在配置中找到');
-}
-NODESCRIPT
-
-    node "$tmp_script" "$OPENCLAW_CONFIG_FILE" "$channel_name" 2>&1
-    local result=$?
-    rm -f "$tmp_script"
-    return $result
-}
-
-# 频道管理菜单
-openclaw_channels() {
-    if ! command -v openclaw &>/dev/null; then
-        echo -e "${gl_hong}❌ OpenClaw 未安装，请先执行「一键部署」${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    while true; do
-        clear
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  OpenClaw 频道管理${gl_bai}"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo ""
-
-        # 显示已配置的频道（从配置文件读取）
-        echo -e "${gl_lv}── 已配置的频道 ──${gl_bai}"
-        if [ -f "$OPENCLAW_CONFIG_FILE" ]; then
-            node -e '
-                const fs = require("fs");
-                const content = fs.readFileSync(process.argv[1], "utf-8");
-                try {
-                    const config = new Function("return (" + content + ")")();
-                    const ch = config.channels || {};
-                    const names = Object.keys(ch);
-                    if (names.length === 0) { console.log("  暂无已配置的频道"); }
-                    else {
-                        for (const n of names) {
-                            const enabled = ch[n].enabled !== false ? "✅" : "❌";
-                            console.log("  " + enabled + " " + n);
-                        }
-                    }
-                } catch(e) { console.log("  暂无已配置的频道"); }
-            ' "$OPENCLAW_CONFIG_FILE" 2>/dev/null || echo "  暂无已配置的频道"
-        else
-            echo "  暂无已配置的频道"
-        fi
-        echo ""
-
-        echo -e "${gl_kjlan}[配置频道]${gl_bai}"
-        echo "1. Telegram Bot      — 输入 Bot Token"
-        echo "2. WhatsApp          — 终端扫码登录"
-        echo "3. Discord Bot       — 输入 Bot Token"
-        echo "4. Slack             — 输入 App Token + Bot Token"
-        echo ""
-        echo -e "${gl_kjlan}[频道管理]${gl_bai}"
-        echo "5. 查看频道状态"
-        echo "6. 查看频道日志"
-        echo "7. 断开/删除频道"
-        echo ""
-        echo "0. 返回"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择 [0-7]: " ch_choice
-
-        case $ch_choice in
-            1)
-                # Telegram
-                clear
-                echo -e "${gl_kjlan}━━━ 配置 Telegram Bot ━━━${gl_bai}"
-                echo ""
-                echo -e "${gl_zi}📋 获取 Bot Token 步骤:${gl_bai}"
-                echo -e "  1. 打开 Telegram，搜索 ${gl_huang}@BotFather${gl_bai}"
-                echo "  2. 发送 /newbot 创建新 Bot"
-                echo "  3. 按提示设置 Bot 名称和用户名（用户名必须以 bot 结尾）"
-                echo "  4. 复制 BotFather 给的 Token"
-                echo ""
-                echo -e "${gl_zi}Token 格式: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz${gl_bai}"
-                echo ""
-
-                read -e -p "请输入 Telegram Bot Token: " tg_token
-                if [ -z "$tg_token" ]; then
-                    echo -e "${gl_hong}❌ Token 不能为空${gl_bai}"
-                    break_end
-                    continue
-                fi
-
-                echo ""
-                echo "正在写入 Telegram 配置..."
-                local tg_json="{\"botToken\":\"${tg_token}\",\"enabled\":true,\"dmPolicy\":\"pairing\",\"groupPolicy\":\"allowlist\",\"streamMode\":\"partial\",\"textChunkLimit\":4000,\"dmHistoryLimit\":50,\"historyLimit\":50}"
-                openclaw_update_channel "telegram" "$tg_json"
-
-                if [ $? -eq 0 ]; then
-                    echo ""
-                    echo -e "${gl_lv}✅ Telegram Bot 配置成功${gl_bai}"
-                    echo ""
-                    echo -e "${gl_zi}下一步:${gl_bai}"
-                    echo "  1. 在 Telegram 中搜索你的 Bot 并发送一条消息"
-                    echo "  2. Bot 会回复一个配对码（pairing code）"
-                    echo -e "  3. 在服务器运行: ${gl_huang}openclaw pairing approve telegram <配对码>${gl_bai}"
-
-                    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                        systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                        sleep 2
-                        echo ""
-                        echo -e "${gl_lv}✅ 服务已重启，配置已生效${gl_bai}"
-                    fi
-                else
-                    echo ""
-                    echo -e "${gl_hong}❌ 配置写入失败${gl_bai}"
-                fi
-                break_end
-                ;;
-            2)
-                # WhatsApp
-                clear
-                echo -e "${gl_kjlan}━━━ 配置 WhatsApp ━━━${gl_bai}"
-                echo ""
-                echo -e "${gl_zi}📋 登录步骤:${gl_bai}"
-                echo "  1. 先写入 WhatsApp 频道配置"
-                echo "  2. 终端会显示 QR 二维码"
-                echo "  3. 打开手机 WhatsApp → 设置 → 已关联设备 → 关联设备"
-                echo "  4. 扫描终端中的 QR 码（60秒内有效，超时重新运行）"
-                echo ""
-                echo -e "${gl_huang}⚠ 注意事项:${gl_bai}"
-                echo "  • 需要使用真实手机号，虚拟号码可能被封禁"
-                echo "  • 一个 WhatsApp 号码只能绑定一个 OpenClaw 网关"
-                echo ""
-
-                read -e -p "准备好了吗？(Y/N): " confirm
-                case "$confirm" in
-                    [Yy])
-                        echo ""
-                        echo "正在写入 WhatsApp 配置..."
-                        local wa_json='{"enabled":true,"dmPolicy":"pairing","groupPolicy":"allowlist","streamMode":"partial","historyLimit":50,"dmHistoryLimit":50}'
-                        openclaw_update_channel "whatsapp" "$wa_json"
-
-                        if [ $? -eq 0 ]; then
-                            echo -e "${gl_lv}✅ WhatsApp 配置已写入${gl_bai}"
-                            echo ""
-
-                            if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                                systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                                sleep 2
-                            fi
-
-                            echo "正在启动 WhatsApp 登录（显示 QR 码）..."
-                            echo ""
-                            openclaw channels login 2>&1
-                        else
-                            echo -e "${gl_hong}❌ 配置写入失败${gl_bai}"
-                        fi
-                        ;;
-                    *)
-                        echo "已取消"
-                        ;;
-                esac
-                break_end
-                ;;
-            3)
-                # Discord
-                clear
-                echo -e "${gl_kjlan}━━━ 配置 Discord Bot ━━━${gl_bai}"
-                echo ""
-                echo -e "${gl_zi}📋 获取 Bot Token 步骤:${gl_bai}"
-                echo -e "  1. 打开 ${gl_huang}https://discord.com/developers/applications${gl_bai}"
-                echo "  2. 点击 New Application → 输入名称 → 创建"
-                echo "  3. 左侧 Bot 页面 → Reset Token → 复制 Token"
-                echo -e "  4. 开启 ${gl_huang}Privileged Gateway Intents${gl_bai}:"
-                echo "     • Message Content Intent（必须开启）"
-                echo "     • Server Members Intent（推荐开启）"
-                echo "  5. OAuth2 → URL Generator → 勾选 bot + applications.commands"
-                echo "     权限: View Channels / Send Messages / Read Message History"
-                echo "  6. 用生成的邀请链接把 Bot 添加到你的服务器"
-                echo ""
-
-                read -e -p "请输入 Discord Bot Token: " dc_token
-                if [ -z "$dc_token" ]; then
-                    echo -e "${gl_hong}❌ Token 不能为空${gl_bai}"
-                    break_end
-                    continue
-                fi
-
-                echo ""
-                echo "正在写入 Discord 配置..."
-                local dc_json="{\"token\":\"${dc_token}\",\"enabled\":true,\"dm\":{\"enabled\":true,\"policy\":\"pairing\"},\"groupPolicy\":\"allowlist\",\"textChunkLimit\":2000,\"historyLimit\":20}"
-                openclaw_update_channel "discord" "$dc_json"
-
-                if [ $? -eq 0 ]; then
-                    echo ""
-                    echo -e "${gl_lv}✅ Discord Bot 配置成功${gl_bai}"
-                    echo ""
-                    echo -e "${gl_zi}确保已用邀请链接将 Bot 添加到你的 Discord 服务器${gl_bai}"
-
-                    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                        systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                        sleep 2
-                        echo -e "${gl_lv}✅ 服务已重启，配置已生效${gl_bai}"
-                    fi
-                else
-                    echo ""
-                    echo -e "${gl_hong}❌ 配置写入失败${gl_bai}"
-                fi
-                break_end
-                ;;
-            4)
-                # Slack
-                clear
-                echo -e "${gl_kjlan}━━━ 配置 Slack ━━━${gl_bai}"
-                echo ""
-                echo -e "${gl_zi}📋 获取 Token 步骤:${gl_bai}"
-                echo -e "  1. 打开 ${gl_huang}https://api.slack.com/apps${gl_bai} → Create New App → From Scratch"
-                echo -e "  2. 开启 ${gl_huang}Socket Mode${gl_bai}"
-                echo "  3. Basic Information → App-Level Tokens → Generate Token"
-                echo -e "     Scope: connections:write → 复制 App Token（${gl_huang}xapp-${gl_bai} 开头）"
-                echo "  4. OAuth & Permissions → 添加 Bot Token Scopes:"
-                echo "     chat:write / channels:history / groups:history"
-                echo "     im:history / channels:read / users:read"
-                echo -e "  5. Install to Workspace → 复制 Bot Token（${gl_huang}xoxb-${gl_bai} 开头）"
-                echo "  6. Event Subscriptions → Enable → Subscribe to message.* events"
-                echo ""
-                echo -e "${gl_huang}Slack 需要两个 Token:${gl_bai}"
-                echo ""
-
-                read -e -p "App Token (xapp-开头): " slack_app_token
-                if [ -z "$slack_app_token" ]; then
-                    echo -e "${gl_hong}❌ App Token 不能为空${gl_bai}"
-                    break_end
-                    continue
-                fi
-
-                read -e -p "Bot Token (xoxb-开头): " slack_bot_token
-                if [ -z "$slack_bot_token" ]; then
-                    echo -e "${gl_hong}❌ Bot Token 不能为空${gl_bai}"
-                    break_end
-                    continue
-                fi
-
-                echo ""
-                echo "正在写入 Slack 配置..."
-                local slack_json="{\"appToken\":\"${slack_app_token}\",\"botToken\":\"${slack_bot_token}\",\"enabled\":true,\"dmPolicy\":\"pairing\",\"groupPolicy\":\"allowlist\",\"streamMode\":\"partial\",\"historyLimit\":50}"
-                openclaw_update_channel "slack" "$slack_json"
-
-                if [ $? -eq 0 ]; then
-                    echo ""
-                    echo -e "${gl_lv}✅ Slack 配置已保存${gl_bai}"
-
-                    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                        systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                        sleep 2
-                        echo -e "${gl_lv}✅ 服务已重启，配置已生效${gl_bai}"
-                    fi
-                else
-                    echo ""
-                    echo -e "${gl_hong}❌ 配置写入失败${gl_bai}"
-                fi
-                break_end
-                ;;
-            5)
-                # 查看频道状态
-                clear
-                echo -e "${gl_kjlan}━━━ 频道状态 ━━━${gl_bai}"
-                echo ""
-                openclaw channels status --probe 2>&1 || \
-                openclaw channels status 2>&1 || \
-                openclaw gateway status 2>&1 || \
-                echo "无法获取频道状态"
-                echo ""
-                break_end
-                ;;
-            6)
-                # 查看频道日志
-                clear
-                echo -e "${gl_kjlan}━━━ 频道日志（最近 50 行）━━━${gl_bai}"
-                echo ""
-                journalctl -u "$OPENCLAW_SERVICE_NAME" --no-pager -n 50 2>/dev/null || \
-                openclaw logs 2>&1 || \
-                echo "无法获取频道日志"
-                echo ""
-                break_end
-                ;;
-            7)
-                # 断开/删除频道
-                clear
-                echo -e "${gl_kjlan}━━━ 断开频道 ━━━${gl_bai}"
-                echo ""
-                echo "选择要断开的频道:"
-                echo "1. Telegram"
-                echo "2. WhatsApp"
-                echo "3. Discord"
-                echo "4. Slack"
-                echo ""
-                echo "0. 取消"
-                echo ""
-
-                read -e -p "请选择 [0-4]: " rm_choice
-                local channel_name=""
-                case $rm_choice in
-                    1) channel_name="telegram" ;;
-                    2) channel_name="whatsapp" ;;
-                    3) channel_name="discord" ;;
-                    4) channel_name="slack" ;;
-                    0) continue ;;
-                    *)
-                        echo "无效选择"
-                        break_end
-                        continue
-                        ;;
-                esac
-
-                echo ""
-                read -e -p "确认断开 ${channel_name}？(Y/N): " confirm
-                case "$confirm" in
-                    [Yy])
-                        echo ""
-                        openclaw_remove_channel "$channel_name"
-                        echo ""
-                        echo -e "${gl_lv}✅ 已断开 ${channel_name}${gl_bai}"
-
-                        if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                            systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                            sleep 2
-                            echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-                        fi
-                        ;;
-                    *)
-                        echo "已取消"
-                        ;;
-                esac
-                break_end
-                ;;
-            0)
-                return
-                ;;
-            *)
-                echo "无效的选择"
-                sleep 2
-                ;;
-        esac
-    done
-}
-
-# 查看当前配置
-openclaw_show_config() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 当前配置${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        echo -e "${gl_huang}⚠ 配置文件不存在: ${OPENCLAW_CONFIG_FILE}${gl_bai}"
-        echo ""
-        break_end
-        return
-    fi
-
-    # 格式化摘要
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-    local port=$(openclaw_get_port)
-    local gw_token=$(sed -nE 's/.*OPENCLAW_GATEWAY_TOKEN=(.*)/\1/p' "$OPENCLAW_ENV_FILE" 2>/dev/null)
-
-    node -e "
-        const fs = require('fs');
-        const content = fs.readFileSync('${OPENCLAW_CONFIG_FILE}', 'utf-8');
-        try {
-            const config = new Function('return (' + content + ')')();
-            const providers = config.models && config.models.providers || {};
-            const keys = Object.keys(providers);
-            const defaults = config.agents && config.agents.defaults && config.agents.defaults.model || {};
-            for (const name of keys) {
-                const p = providers[name];
-                console.log('  Provider:  ' + name);
-                console.log('  API 类型:  ' + (p.api || 'unknown'));
-                console.log('  反代地址:  ' + (p.baseUrl || 'unknown'));
-                const models = p.models || [];
-                if (models.length > 0) {
-                    console.log('  可用模型:  ' + models.map(m => m.id).join(', '));
-                }
-            }
-            if (defaults.primary) console.log('  主力模型:  ' + defaults.primary);
-
-            const ch = config.channels || {};
-            const chNames = Object.keys(ch);
-            if (chNames.length > 0) {
-                console.log('');
-                console.log('  已配置频道: ' + chNames.map(n => { const e = ch[n].enabled !== false; return (e ? '✅' : '❌') + ' ' + n; }).join('  |  '));
-            }
-        } catch(e) { console.log('  无法解析配置'); }
-    " 2>/dev/null
-
-    echo ""
-    echo -e "${gl_kjlan}━━━ 部署信息 ━━━${gl_bai}"
-    echo -e "网关端口:   ${gl_huang}${port}${gl_bai}"
-    if [ -n "$gw_token" ]; then
-        echo -e "网关 Token: ${gl_huang}${gw_token}${gl_bai}"
-    fi
-    echo -e "控制面板:   ${gl_huang}http://${server_ip}:${port}/${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}━━━ 访问方式 ━━━${gl_bai}"
-    echo -e "SSH 隧道:   ${gl_huang}ssh -N -L ${port}:127.0.0.1:${port} root@${server_ip}${gl_bai}"
-    echo -e "然后访问:   ${gl_huang}http://localhost:${port}/${gl_bai}"
-    echo ""
-
-    echo -e "${gl_kjlan}━━━ 管理命令 ━━━${gl_bai}"
-    echo "  状态: systemctl status $OPENCLAW_SERVICE_NAME"
-    echo "  日志: journalctl -u $OPENCLAW_SERVICE_NAME -f"
-    echo "  重启: systemctl restart $OPENCLAW_SERVICE_NAME"
-    echo ""
-
-    # 查看原始文件
-    read -e -p "是否查看原始配置文件？(Y/N): " show_raw
-    case "$show_raw" in
-        [Yy])
-            echo ""
-            echo -e "${gl_zi}── ${OPENCLAW_CONFIG_FILE} ──${gl_bai}"
-            cat "$OPENCLAW_CONFIG_FILE"
-            echo ""
-            if [ -f "$OPENCLAW_ENV_FILE" ]; then
-                echo -e "${gl_zi}── ${OPENCLAW_ENV_FILE}（脱敏）──${gl_bai}"
-                sed 's/\(=\).*/\1****（已隐藏）/' "$OPENCLAW_ENV_FILE"
-            fi
-            ;;
-    esac
-
-    echo ""
-    break_end
-}
-
-# 编辑配置文件
-openclaw_edit_config() {
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        echo -e "${gl_huang}⚠ 配置文件不存在，是否创建默认配置？${gl_bai}"
-        read -e -p "(Y/N): " confirm
-        case "$confirm" in
-            [Yy])
-                mkdir -p "$OPENCLAW_HOME_DIR"
-                echo '{}' > "$OPENCLAW_CONFIG_FILE"
-                ;;
-            *)
-                return
-                ;;
-        esac
-    fi
-
-    local editor="nano"
-    if command -v vim &>/dev/null; then
-        editor="vim"
-    fi
-    if command -v nano &>/dev/null; then
-        editor="nano"
-    fi
-
-    $editor "$OPENCLAW_CONFIG_FILE"
-
-    echo ""
-    echo -e "${gl_zi}提示: 修改配置后需重启服务生效 (systemctl restart $OPENCLAW_SERVICE_NAME)${gl_bai}"
-
-    read -e -p "是否现在重启服务？(Y/N): " confirm
-    case "$confirm" in
-        [Yy])
-            systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-            sleep 2
-            if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-            else
-                echo -e "${gl_hong}❌ 服务重启失败，请检查配置是否正确${gl_bai}"
-            fi
-            ;;
-    esac
-
-    break_end
-}
-
-# 快速替换 API（保留现有设置）
-openclaw_quick_api() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  快速替换 API（保留端口/频道等现有设置）${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if ! command -v openclaw &>/dev/null; then
-        echo -e "${gl_hong}❌ OpenClaw 未安装${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
-        echo -e "${gl_hong}❌ 配置文件不存在，请先执行「一键部署」${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 显示当前 API 配置
-    echo -e "${gl_lv}── 当前 API 配置 ──${gl_bai}"
-    node -e "
-        const fs = require('fs');
-        const content = fs.readFileSync('${OPENCLAW_CONFIG_FILE}', 'utf-8');
-        try {
-            const config = new Function('return (' + content + ')')();
-            const providers = config.models && config.models.providers || {};
-            const keys = Object.keys(providers);
-            if (keys.length === 0) { console.log('  暂无 API 配置'); }
-            for (const name of keys) {
-                const p = providers[name];
-                console.log('  Provider:  ' + name);
-                console.log('  API 类型:  ' + (p.api || 'unknown'));
-                console.log('  地址:      ' + (p.baseUrl || 'unknown'));
-                const models = p.models || [];
-                if (models.length > 0) {
-                    console.log('  模型:      ' + models.map(m => m.id).join(', '));
-                }
-            }
-        } catch(e) { console.log('  无法解析当前配置'); }
-    " 2>/dev/null || echo "  无法读取当前配置"
-    echo ""
-
-    # 选择新的 API
-    echo -e "${gl_huang}选择要配置的 API:${gl_bai}"
-    echo ""
-    echo -e "${gl_lv}── 已验证可用的反代 ──${gl_bai}"
-    echo "1. CRS 反代 (Claude)         — anthropic-messages"
-    echo "2. sub2api 反代 (Gemini)      — google-generative-ai"
-    echo "3. sub2api 反代 (GPT)         — openai-responses"
-    echo "4. sub2api Antigravity (Claude) — anthropic-messages"
-    echo ""
-    echo -e "${gl_huang}── 通用配置 ──${gl_bai}"
-    echo "5. 自定义 Anthropic 反代"
-    echo "6. 自定义 OpenAI 兼容"
-    echo ""
-
-    read -e -p "请选择 [1-6]: " api_choice
-
-    local api_type="" provider_name="" preset_mode=""
-    local base_url="" api_key="" model_id="" model_name=""
-    local model_reasoning="false" model_input='["text"]' model_cost_input="3" model_cost_output="15"
-    local model_cost_cache_read="0.3" model_cost_cache_write="3.75"
-    local model_context="200000" model_max_tokens="16384"
-
-    case $api_choice in
-        1)
-            preset_mode="crs"
-            api_type="anthropic-messages"
-            provider_name="crs-claude"
-            echo ""
-            echo -e "${gl_lv}已选择: CRS 反代 (Claude)${gl_bai}"
-            echo -e "${gl_zi}地址格式: http://IP:端口/api${gl_bai}"
-            ;;
-        2)
-            preset_mode="sub2api-gemini"
-            api_type="google-generative-ai"
-            provider_name="sub2api-gemini"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api 反代 (Gemini)${gl_bai}"
-            echo -e "${gl_zi}地址格式: https://你的sub2api域名${gl_bai}"
-            ;;
-        3)
-            preset_mode="sub2api-gpt"
-            api_type="openai-responses"
-            provider_name="sub2api-gpt"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api 反代 (GPT)${gl_bai}"
-            echo -e "${gl_zi}地址格式: https://你的sub2api域名${gl_bai}"
-            ;;
-        4)
-            preset_mode="sub2api-antigravity"
-            api_type="anthropic-messages"
-            provider_name="sub2api-antigravity"
-            echo ""
-            echo -e "${gl_lv}已选择: sub2api Antigravity (Claude)${gl_bai}"
-            echo -e "${gl_zi}地址格式: https://你的sub2api域名/antigravity${gl_bai}"
-            echo -e "${gl_huang}注意: 高峰期偶尔返回 503，重试即可${gl_bai}"
-            ;;
-        5)
-            api_type="anthropic-messages"
-            provider_name="custom-anthropic"
-            echo ""
-            echo -e "${gl_zi}地址格式: https://your-proxy.com${gl_bai}"
-            ;;
-        6)
-            api_type="openai-completions"
-            provider_name="custom-openai"
-            echo ""
-            echo -e "${gl_zi}地址格式: https://your-proxy.com/v1${gl_bai}"
-            ;;
-        *)
-            echo "无效选择"
-            break_end
-            return
-            ;;
-    esac
-
-    # 输入地址
-    echo ""
-    read -e -p "反代地址: " base_url
-    if [ -z "$base_url" ]; then
-        echo -e "${gl_hong}❌ 地址不能为空${gl_bai}"
-        break_end
-        return
-    fi
-    base_url="${base_url%/}"
-
-    # 自动添加后缀
-    if [ "$api_type" = "google-generative-ai" ]; then
-        if [[ ! "$base_url" =~ /v1beta$ ]] && [[ ! "$base_url" =~ /v1$ ]]; then
-            base_url="${base_url}/v1beta"
-            echo -e "${gl_lv}已自动添加后缀: ${base_url}${gl_bai}"
-        fi
-    elif [ "$preset_mode" = "sub2api-gpt" ]; then
-        if [[ ! "$base_url" =~ /v1$ ]]; then
-            base_url="${base_url}/v1"
-            echo -e "${gl_lv}已自动添加后缀: ${base_url}${gl_bai}"
-        fi
-    fi
-
-    # 输入 Key
-    echo ""
-    read -e -p "API Key: " api_key
-    if [ -z "$api_key" ]; then
-        echo -e "${gl_hong}❌ Key 不能为空${gl_bai}"
-        break_end
-        return
-    fi
-
-    # 快速模型选择
-    echo ""
-    echo -e "${gl_kjlan}选择模型:${gl_bai}"
-    if [ "$preset_mode" = "crs" ]; then
-        echo "1. claude-opus-4-6 (推荐)"
-        echo "2. claude-sonnet-4-6"
-        echo "3. claude-sonnet-4-5"
-        echo "4. claude-haiku-4-5"
-        echo "5. 自定义"
-        read -e -p "请选择 [1-5]: " m_choice
-        case $m_choice in
-            1) model_id="claude-opus-4-6"; model_name="Claude Opus 4.6" ;;
-            2) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6" ;;
-            3) model_id="claude-sonnet-4-5"; model_name="Claude Sonnet 4.5" ;;
-            4) model_id="claude-haiku-4-5"; model_name="Claude Haiku 4.5" ;;
-            5) read -e -p "模型 ID: " model_id; model_name="$model_id" ;;
-            *) model_id="claude-opus-4-6"; model_name="Claude Opus 4.6" ;;
-        esac
-    elif [ "$preset_mode" = "sub2api-antigravity" ]; then
-        echo "1. claude-sonnet-4-6 (推荐)"
-        echo "2. claude-sonnet-4-5"
-        echo "3. claude-sonnet-4-5-thinking (扩展思考)"
-        echo "4. claude-opus-4-5-thinking (最强思考)"
-        echo "5. 自定义"
-        read -e -p "请选择 [1-5]: " m_choice
-        case $m_choice in
-            1) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6" ;;
-            2) model_id="claude-sonnet-4-5"; model_name="Claude Sonnet 4.5" ;;
-            3) model_id="claude-sonnet-4-5-thinking"; model_name="Claude Sonnet 4.5 Thinking" ;;
-            4) model_id="claude-opus-4-5-thinking"; model_name="Claude Opus 4.5 Thinking" ;;
-            5) read -e -p "模型 ID: " model_id; model_name="$model_id" ;;
-            *) model_id="claude-sonnet-4-6"; model_name="Claude Sonnet 4.6" ;;
-        esac
-    elif [ "$preset_mode" = "sub2api-gemini" ]; then
-        echo "1. gemini-3.1-pro-preview (推荐)"
-        echo "2. gemini-3.1-flash-lite"
-        echo "3. gemini-3-flash-preview"
-        echo "4. gemini-2.5-pro"
-        echo "5. gemini-2.5-flash"
-        echo "6. 自定义"
-        read -e -p "请选择 [1-6]: " m_choice
-        case $m_choice in
-            1) model_id="gemini-3.1-pro-preview"; model_name="Gemini 3.1 Pro Preview" ;;
-            2) model_id="gemini-3.1-flash-lite"; model_name="Gemini 3.1 Flash Lite" ;;
-            3) model_id="gemini-3-flash-preview"; model_name="Gemini 3 Flash Preview" ;;
-            4) model_id="gemini-2.5-pro"; model_name="Gemini 2.5 Pro" ;;
-            5) model_id="gemini-2.5-flash"; model_name="Gemini 2.5 Flash" ;;
-            6) read -e -p "模型 ID: " model_id; model_name="$model_id" ;;
-            *) model_id="gemini-3.1-pro-preview"; model_name="Gemini 3.1 Pro Preview" ;;
-        esac
-    elif [ "$preset_mode" = "sub2api-gpt" ]; then
-        echo "1. gpt-5.4 (推荐)"
-        echo "2. gpt-5.4-pro"
-        echo "3. gpt-5.3-instant"
-        echo "4. gpt-5.3"
-        echo "5. gpt-5.3-codex"
-        echo "6. gpt-5.2"
-        echo "7. gpt-5.2-codex"
-        echo "8. 自定义"
-        read -e -p "请选择 [1-8]: " m_choice
-        case $m_choice in
-            1) model_id="gpt-5.4"; model_name="GPT 5.4" ;;
-            2) model_id="gpt-5.4-pro"; model_name="GPT 5.4 Pro" ;;
-            3) model_id="gpt-5.3-instant"; model_name="GPT 5.3 Instant" ;;
-            4) model_id="gpt-5.3"; model_name="GPT 5.3" ;;
-            5) model_id="gpt-5.3-codex"; model_name="GPT 5.3 Codex" ;;
-            6) model_id="gpt-5.2"; model_name="GPT 5.2" ;;
-            7) model_id="gpt-5.2-codex"; model_name="GPT 5.2 Codex" ;;
-            8) read -e -p "模型 ID: " model_id; model_name="$model_id" ;;
-            *) model_id="gpt-5.4"; model_name="GPT 5.4" ;;
-        esac
-    else
-        read -e -p "模型 ID: " model_id
-        model_name="$model_id"
-    fi
-
-    if [ -z "$model_id" ]; then
-        echo -e "${gl_hong}❌ 模型不能为空${gl_bai}"
-        break_end
-        return
-    fi
-
-    echo ""
-    echo -e "${gl_kjlan}━━━ 确认配置 ━━━${gl_bai}"
-    echo -e "API 类型:   ${gl_huang}${api_type}${gl_bai}"
-    echo -e "反代地址:   ${gl_huang}${base_url}${gl_bai}"
-    echo -e "模型:       ${gl_huang}${model_id}${gl_bai}"
-    echo ""
-
-    read -e -p "确认替换 API 配置？(Y/N): " confirm
-    if [[ ! "$confirm" =~ [Yy] ]]; then
-        echo "已取消"
-        break_end
-        return
-    fi
-
-    # 写入新 provider 数据到临时 JSON 文件
-    local tmp_json=$(mktemp /tmp/openclaw_api_XXXXXX.json)
-    cat > "$tmp_json" <<APIJSON
-{
-    "providers": {
-        "${provider_name}": {
-            "baseUrl": "${base_url}",
-            "apiKey": "\${OPENCLAW_API_KEY}",
-            "api": "${api_type}",
-            "models": [
-                {
-                    "id": "${model_id}",
-                    "name": "${model_name}",
-                    "reasoning": ${model_reasoning},
-                    "input": ${model_input},
-                    "cost": { "input": ${model_cost_input}, "output": ${model_cost_output}, "cacheRead": ${model_cost_cache_read}, "cacheWrite": ${model_cost_cache_write} },
-                    "contextWindow": ${model_context},
-                    "maxTokens": ${model_max_tokens}
-                }
-            ]
-        }
-    },
-    "primaryModel": "${provider_name}/${model_id}"
-}
-APIJSON
-
-    # 用 Node.js 合并配置（只替换 models + agents.defaults.model，保留其他一切）
-    echo ""
-    echo "正在更新配置..."
-    node -e "
-        const fs = require('fs');
-        const configPath = '${OPENCLAW_CONFIG_FILE}';
-        const newDataPath = '${tmp_json}';
-
-        // 读取现有配置（JSON5: 用 Function 解析，JS 引擎原生支持注释）
-        const content = fs.readFileSync(configPath, 'utf-8');
-        let config;
-        try {
-            config = new Function('return (' + content + ')')();
-        } catch(e) {
-            console.error('❌ 无法解析现有配置: ' + e.message);
-            process.exit(1);
-        }
-
-        // 读取新 provider 数据
-        const newData = JSON.parse(fs.readFileSync(newDataPath, 'utf-8'));
-
-        // 只替换 models.providers 和 agents.defaults.model
-        config.models = config.models || {};
-        config.models.mode = 'merge';
-        config.models.providers = newData.providers;
-
-        config.agents = config.agents || {};
-        config.agents.defaults = config.agents.defaults || {};
-        config.agents.defaults.model = { primary: newData.primaryModel };
-
-        // 写回（保留 gateway/channels 等所有其他配置）
-        const header = '// OpenClaw 配置 - API 由脚本快速配置\n// 文档: https://docs.openclaw.ai/gateway/configuration\n';
-        fs.writeFileSync(configPath, header + JSON.stringify(config, null, 2) + '\n');
-        console.log('✅ 配置文件已更新');
-    " 2>&1
-
-    local node_exit=$?
-    rm -f "$tmp_json"
-
-    if [ $node_exit -ne 0 ]; then
-        echo -e "${gl_hong}❌ 配置更新失败${gl_bai}"
-        break_end
-        return
-    fi
-
-    # 更新 .env 中的 API Key
-    if [ -f "$OPENCLAW_ENV_FILE" ]; then
-        sed -i "s|^OPENCLAW_API_KEY=.*|OPENCLAW_API_KEY=${api_key}|" "$OPENCLAW_ENV_FILE"
-        echo "✅ API Key 已更新"
-    else
-        mkdir -p "$OPENCLAW_HOME_DIR"
-        echo "OPENCLAW_API_KEY=${api_key}" > "$OPENCLAW_ENV_FILE"
-        chmod 600 "$OPENCLAW_ENV_FILE"
-        echo "✅ 环境变量文件已创建"
-    fi
-
-    # sub2api 兼容补丁（如需要）
-    if [ "$api_type" = "openai-responses" ] && [[ ! "$base_url" =~ api\.openai\.com ]]; then
-        openclaw_patch_sub2api
-    fi
-
-    # 重启服务
-    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-        systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-        sleep 2
-        if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-            echo -e "${gl_lv}✅ 服务已重启，API 已生效${gl_bai}"
-        else
-            echo -e "${gl_hong}❌ 服务重启失败，查看日志: journalctl -u ${OPENCLAW_SERVICE_NAME} -n 20${gl_bai}"
-        fi
-    else
-        echo -e "${gl_huang}⚠ 服务未运行，请手动启动: systemctl start ${OPENCLAW_SERVICE_NAME}${gl_bai}"
-    fi
-
-    echo ""
-    echo -e "${gl_kjlan}━━━ 替换完成 ━━━${gl_bai}"
-    echo -e "API 类型:   ${gl_huang}${api_type}${gl_bai}"
-    echo -e "反代地址:   ${gl_huang}${base_url}${gl_bai}"
-    echo -e "主力模型:   ${gl_huang}${provider_name}/${model_id}${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}原有的端口、频道、网关 Token 等设置均已保留${gl_bai}"
-
-    break_end
-}
-
-# 安全检查
-openclaw_doctor() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OpenClaw 安全检查${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    if ! command -v openclaw &>/dev/null; then
-        echo -e "${gl_hong}❌ OpenClaw 未安装${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    openclaw doctor
-    echo ""
-
-    read -e -p "是否自动修复发现的问题？(Y/N): " confirm
-    case "$confirm" in
-        [Yy])
-            echo ""
-            openclaw doctor --fix
-            ;;
-    esac
-
-    break_end
-}
-
-# 卸载 OpenClaw
-openclaw_uninstall() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}  卸载 OpenClaw${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "${gl_huang}警告: 此操作将删除 OpenClaw 及其所有配置！${gl_bai}"
-    echo ""
-    echo "将删除以下内容:"
-    echo "  - OpenClaw 全局包"
-    echo "  - systemd 服务"
-    echo "  - 配置目录 ${OPENCLAW_HOME_DIR}"
-    echo ""
-
-    read -e -p "确认卸载？(输入 yes 确认): " confirm
-
-    if [ "$confirm" != "yes" ]; then
-        echo "已取消"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在停止服务..."
-    systemctl stop "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-    systemctl disable "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-
-    echo "正在删除 systemd 服务..."
-    rm -f "/etc/systemd/system/${OPENCLAW_SERVICE_NAME}.service"
-    systemctl daemon-reload 2>/dev/null
-
-    echo "正在卸载 OpenClaw..."
-    npm uninstall -g openclaw 2>/dev/null
-
-    echo ""
-    read -e -p "是否同时删除配置目录 ${OPENCLAW_HOME_DIR}？(Y/N): " del_config
-    case "$del_config" in
-        [Yy])
-            rm -rf "$OPENCLAW_HOME_DIR"
-            echo -e "${gl_lv}✅ 配置目录已删除${gl_bai}"
-            ;;
-        *)
-            echo -e "${gl_zi}配置目录已保留，下次安装可复用${gl_bai}"
-            ;;
-    esac
-
-    echo ""
-    echo -e "${gl_lv}✅ OpenClaw 卸载完成${gl_bai}"
-
-    break_end
-}
-
-# OpenClaw 主菜单
-manage_openclaw() {
-    while true; do
-        clear
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  OpenClaw 部署管理 (AI多渠道消息网关)${gl_bai}"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo ""
-
-        # 显示当前状态
-        local status=$(openclaw_check_status)
-        local port=$(openclaw_get_port)
-
-        case "$status" in
-            "not_installed")
-                echo -e "当前状态: ${gl_huang}⚠ 未安装${gl_bai}"
-                ;;
-            "installed_no_service")
-                echo -e "当前状态: ${gl_huang}⚠ 已安装但服务未配置${gl_bai}"
-                ;;
-            "running")
-                echo -e "当前状态: ${gl_lv}✅ 运行中${gl_bai} (端口: ${port})"
-                ;;
-            "stopped")
-                echo -e "当前状态: ${gl_hong}❌ 已停止${gl_bai}"
-                ;;
-        esac
-
-        echo ""
-        echo -e "${gl_kjlan}[部署与更新]${gl_bai}"
-        echo "1. 一键部署（首次安装）"
-        echo "2. 更新版本"
-        echo ""
-        echo -e "${gl_kjlan}[服务管理]${gl_bai}"
-        echo "3. 查看状态"
-        echo "4. 查看日志"
-        echo "5. 启动服务"
-        echo "6. 停止服务"
-        echo "7. 重启服务"
-        echo ""
-        echo -e "${gl_kjlan}[配置管理]${gl_bai}"
-        echo "8. 模型配置（完整配置/首次部署）"
-        echo "9. 快速替换 API（保留现有设置）"
-        echo "10. 频道管理（登录/配置）"
-        echo "11. 查看当前配置"
-        echo "12. 编辑配置文件"
-        echo "13. 安全检查（doctor）"
-        echo "14. sub2api 兼容补丁（手动重打）"
-        echo ""
-        echo -e "${gl_hong}15. 卸载 OpenClaw${gl_bai}"
-        echo ""
-        echo "0. 返回主菜单"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择操作 [0-15]: " choice
-
-        case $choice in
-            1)
-                openclaw_deploy
-                ;;
-            2)
-                openclaw_update
-                ;;
-            3)
-                openclaw_status
-                ;;
-            4)
-                openclaw_logs
-                ;;
-            5)
-                openclaw_start
-                ;;
-            6)
-                openclaw_stop
-                ;;
-            7)
-                openclaw_restart
-                ;;
-            8)
-                openclaw_config_model
-                echo ""
-                # sub2api 兼容补丁（如需要）
-                if openclaw_needs_patch; then
-                    openclaw_patch_sub2api
-                    echo ""
-                fi
-                # 检查服务是否存在再决定重启
-                if systemctl list-unit-files "${OPENCLAW_SERVICE_NAME}.service" &>/dev/null && \
-                   systemctl cat "$OPENCLAW_SERVICE_NAME" &>/dev/null 2>&1; then
-                    read -e -p "是否重启服务使配置生效？(Y/N): " confirm
-                    case "$confirm" in
-                        [Yy])
-                            systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                            sleep 2
-                            if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                                echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-                            else
-                                echo -e "${gl_hong}❌ 服务重启失败，查看日志: journalctl -u ${OPENCLAW_SERVICE_NAME} -n 20${gl_bai}"
-                            fi
-                            ;;
-                    esac
-                else
-                    echo -e "${gl_huang}⚠ systemd 服务尚未创建，请先运行「1. 一键部署」完成完整部署${gl_bai}"
-                fi
-                break_end
-                ;;
-            9)
-                openclaw_quick_api
-                ;;
-            10)
-                openclaw_channels
-                ;;
-            11)
-                openclaw_show_config
-                ;;
-            12)
-                openclaw_edit_config
-                ;;
-            13)
-                openclaw_doctor
-                ;;
-            14)
-                clear
-                echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-                echo -e "${gl_kjlan}  sub2api 兼容补丁${gl_bai}"
-                echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-                echo ""
-                echo -e "${gl_zi}补丁说明:${gl_bai}"
-                echo "  1. 添加 instructions 字段 (sub2api Responses API 必需)"
-                echo "  2. 移除 max_output_tokens (sub2api 不支持该参数)"
-                echo ""
-                echo -e "${gl_zi}适用场景:${gl_bai}"
-                echo "  • 使用 sub2api GPT 等非 OpenAI 官方的 openai-responses 反代"
-                echo "  • openclaw 更新后补丁被覆盖需要重新打"
-                echo ""
-                if openclaw_needs_patch; then
-                    echo -e "${gl_huang}检测到当前配置使用 openai-responses 反代，建议打补丁${gl_bai}"
-                else
-                    echo -e "${gl_zi}当前配置未使用 openai-responses 反代，补丁可能不需要${gl_bai}"
-                fi
-                echo ""
-                read -e -p "是否执行补丁？(Y/N): " confirm
-                case "$confirm" in
-                    [Yy])
-                        openclaw_patch_sub2api
-                        echo ""
-                        if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                            read -e -p "是否重启服务使补丁生效？(Y/N): " restart_confirm
-                            case "$restart_confirm" in
-                                [Yy])
-                                    systemctl restart "$OPENCLAW_SERVICE_NAME" 2>/dev/null
-                                    sleep 2
-                                    if systemctl is-active "$OPENCLAW_SERVICE_NAME" &>/dev/null; then
-                                        echo -e "${gl_lv}✅ 服务已重启${gl_bai}"
-                                    else
-                                        echo -e "${gl_hong}❌ 服务重启失败${gl_bai}"
-                                    fi
-                                    ;;
-                            esac
-                        fi
-                        ;;
-                    *)
-                        echo "已取消"
-                        ;;
-                esac
-                break_end
-                ;;
-            15)
-                openclaw_uninstall
-                ;;
-            0)
-                return
-                ;;
-            *)
-                echo "无效的选择"
-                sleep 2
-                ;;
-        esac
-    done
-}
-
 # ============================================================================
 # OpenAI Responses API → Chat Completions 转换代理（多实例）
 # ============================================================================
@@ -25875,2385 +22917,1459 @@ resp_proxy_get_port() { echo "$RESP_PROXY_PORT_START"; }
 resp_proxy_get_upstream() { echo ""; }
 
 #=============================================================================
-# CLIProxyAPI (CLI转API代理)
+# 端口流量计费与到期管理 (Port Traffic Monitor, 菜单 33)
 #=============================================================================
-CPA_CONTAINER_NAME="cli-proxy-api"
-CPA_IMAGE="eceasy/cli-proxy-api:latest"
-CPA_INSTALL_DIR="/opt/cli-proxy-api"
-CPA_DEFAULT_PORT="8317"
-CPA_PORT_FILE="/etc/cli-proxy-api-port"
-CPA_SECRET_FILE="/etc/cli-proxy-api-secret"
+# 基于 nftables 计数器/配额 + tc 限速实现按端口流量计费、配额管控、到期自动停机。
+# 独立模块，不依赖任何外部私有脚本或联动接口。
 
-# 获取当前端口
-cpa_get_port() {
-    if [ -f "$CPA_PORT_FILE" ]; then
-        cat "$CPA_PORT_FILE"
-    else
-        echo "$CPA_DEFAULT_PORT"
+PTM_CONFIG_DIR="/etc/ptm"
+PTM_CONFIG_FILE="${PTM_CONFIG_DIR}/config.json"
+PTM_LOG_DIR="${PTM_CONFIG_DIR}/logs"
+PTM_NOTIFICATION_LOG="${PTM_LOG_DIR}/notification.log"
+PTM_RESET_HISTORY_LOG="${PTM_CONFIG_DIR}/reset_history.log"
+PTM_TABLE_NAME="ptm_traffic"
+PTM_TABLE_FAMILY="inet"
+PTM_CONFIG_LOCK_FILE="/var/run/ptm-config.lock"
+PTM_DAILY_SCRIPT="/usr/local/bin/ptm-daily-check.sh"
+PTM_RESET_SCRIPT="/usr/local/bin/ptm-reset-check.sh"
+PTM_EMAIL_MAX_RETRIES=2
+PTM_EMAIL_CONNECT_TIMEOUT=10
+PTM_EMAIL_MAX_TIMEOUT=30
+
+# ---- 基础工具 ----
+
+ptm_beijing_time() {
+    TZ='Asia/Shanghai' date "$@"
+}
+
+ptm_log_notification() {
+    local message="$1"
+    local timestamp
+    timestamp=$(ptm_beijing_time '+%Y-%m-%d %H:%M:%S')
+    mkdir -p "$PTM_LOG_DIR"
+    echo "[$timestamp] $message" >> "$PTM_NOTIFICATION_LOG"
+    if [ -f "$PTM_NOTIFICATION_LOG" ] && [ "$(wc -l < "$PTM_NOTIFICATION_LOG")" -gt 1000 ]; then
+        tail -n 500 "$PTM_NOTIFICATION_LOG" > "${PTM_NOTIFICATION_LOG}.tmp"
+        mv "${PTM_NOTIFICATION_LOG}.tmp" "$PTM_NOTIFICATION_LOG"
     fi
 }
 
-# 获取管理密钥
-cpa_get_secret() {
-    if [ -f "$CPA_SECRET_FILE" ]; then
-        cat "$CPA_SECRET_FILE"
-    else
-        echo ""
-    fi
+ptm_check_dependencies() {
+    install_package nft tc jq
 }
 
-# 检查端口是否可用
-cpa_check_port() {
-    local port=$1
-    if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-        return 1
-    fi
-    return 0
-}
-
-# 检查状态
-cpa_check_status() {
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CPA_CONTAINER_NAME}"; then
-        echo "running"
-    elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CPA_CONTAINER_NAME}"; then
-        echo "stopped"
-    elif [ -d "$CPA_INSTALL_DIR" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        echo "installed_no_container"
-    else
-        echo "not_installed"
-    fi
-}
-
-# 安装 Docker
-cpa_install_docker() {
-    if command -v docker &>/dev/null; then
-        echo -e "${gl_lv}✅ Docker 已安装${gl_bai}"
-        return 0
-    fi
-
-    echo "正在安装 Docker..."
-    run_remote_script "https://get.docker.com" sh
-
-    if [ $? -eq 0 ]; then
-        systemctl enable docker
-        systemctl start docker
-        echo -e "${gl_lv}✅ Docker 安装成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ Docker 安装失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 获取 docker compose 命令
-cpa_compose_cmd() {
-    if docker compose version &>/dev/null 2>&1; then
-        echo "docker compose"
-    elif command -v docker-compose &>/dev/null; then
-        echo "docker-compose"
-    else
-        echo ""
-    fi
-}
-
-# 一键部署
-cpa_deploy() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  一键部署 CLIProxyAPI (CLI转API代理)${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(cpa_check_status)
-    if [ "$status" != "not_installed" ]; then
-        echo -e "${gl_huang}⚠️ CLIProxyAPI 已安装${gl_bai}"
-        read -e -p "是否重新部署？(y/n) [n]: " reinstall
-        if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then
-            break_end
-            return 0
-        fi
-        local compose_cmd=$(cpa_compose_cmd)
-        if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-            cd "$CPA_INSTALL_DIR" && $compose_cmd down 2>/dev/null
-        fi
-    fi
-
-    # [1/5] 安装 Docker
-    echo ""
-    echo -e "${gl_kjlan}[1/5] 检查 Docker 环境...${gl_bai}"
-    cpa_install_docker || { break_end; return 1; }
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用，请检查 Docker 安装${gl_bai}"
-        break_end
-        return 1
-    fi
-    echo -e "${gl_lv}✅ $compose_cmd 可用${gl_bai}"
-
-    # [2/5] 创建目录
-    echo ""
-    echo -e "${gl_kjlan}[2/5] 创建目录结构...${gl_bai}"
-    mkdir -p "$CPA_INSTALL_DIR/auths"
-    mkdir -p "$CPA_INSTALL_DIR/logs"
-    echo -e "${gl_lv}✅ 目录创建完成${gl_bai}"
-
-    # [3/5] 配置参数
-    echo ""
-    echo -e "${gl_kjlan}[3/5] 配置服务参数...${gl_bai}"
-    echo ""
-
-    # API 端口
-    local api_port="$CPA_DEFAULT_PORT"
-    read -e -p "请输入 API 端口 [$CPA_DEFAULT_PORT]: " input_port
-    if [ -n "$input_port" ]; then
-        api_port="$input_port"
-    fi
-    while ! cpa_check_port "$api_port"; do
-        echo -e "${gl_hong}⚠️ 端口 $api_port 已被占用${gl_bai}"
-        read -e -p "请输入 API 端口: " api_port
-        [ -z "$api_port" ] && api_port="$CPA_DEFAULT_PORT"
-    done
-    echo -e "${gl_lv}✅ API 端口 $api_port 可用${gl_bai}"
-
-    # 检查 OAuth 回调端口是否冲突，冲突的自动跳过映射
-    local oauth_ports="8085 1455 54545 51121 11451"
-    local available_oauth_ports=""
-    local skipped_ports=""
-    for p in $oauth_ports; do
-        if cpa_check_port "$p"; then
-            available_oauth_ports="${available_oauth_ports}      - \"${p}:${p}\"\n"
-        else
-            echo -e "${gl_huang}⚠️ OAuth 回调端口 $p 已被占用，跳过映射（OAuth 登录该通道可能不可用）${gl_bai}"
-            skipped_ports="${skipped_ports} ${p}"
-        fi
-    done
-
-    # 管理密钥
-    echo ""
-    local secret_key=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p | head -c 32)
-    read -e -p "设置管理密钥 [随机生成: $secret_key]: " input_secret
-    if [ -n "$input_secret" ]; then
-        secret_key="$input_secret"
-    fi
-
-    # [4/5] 生成配置文件
-    echo ""
-    echo -e "${gl_kjlan}[4/5] 生成配置文件...${gl_bai}"
-
-    # 生成 config.yaml
-    cat > "$CPA_INSTALL_DIR/config.yaml" << CONFIGEOF
-# CLIProxyAPI 配置文件
-# port 为容器内部端口，外部端口在 docker-compose.yml 中映射
-host: ""
-port: 8317
-remote-management:
-  allow-remote: true
-  secret-key: "$secret_key"
-  disable-control-panel: false
-auth-dir: /root/.cli-proxy-api
-debug: false
-logging-to-file: true
-request-retry: 3
-CONFIGEOF
-
-    # 生成 docker-compose.yml（只映射可用的 OAuth 端口）
-    {
-        echo "services:"
-        echo "  cli-proxy-api:"
-        echo "    image: ${CPA_IMAGE}"
-        echo "    container_name: ${CPA_CONTAINER_NAME}"
-        echo "    ports:"
-        echo "      - \"${api_port}:8317\""
-        for p in $oauth_ports; do
-            if cpa_check_port "$p"; then
-                echo "      - \"${p}:${p}\""
-            fi
-        done
-        echo "    volumes:"
-        echo "      - ./config.yaml:/CLIProxyAPI/config.yaml"
-        echo "      - ./auths:/root/.cli-proxy-api"
-        echo "      - ./logs:/CLIProxyAPI/logs"
-        echo "    restart: unless-stopped"
-    } > "$CPA_INSTALL_DIR/docker-compose.yml"
-
-    echo -e "${gl_lv}✅ 配置文件生成完成${gl_bai}"
-
-    # [5/5] 启动服务
-    echo ""
-    echo -e "${gl_kjlan}[5/5] 启动 CLIProxyAPI 服务...${gl_bai}"
-
-    cd "$CPA_INSTALL_DIR" || return 1
-    $compose_cmd up -d
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-        echo ""
-        echo -e "${gl_huang}提示: 可尝试手动执行以下命令后重试:${gl_bai}"
-        echo "  systemctl restart docker"
-        break_end
-        return 1
-    fi
-
-    # 保存配置
-    echo "$api_port" > "$CPA_PORT_FILE"
-    echo "$secret_key" > "$CPA_SECRET_FILE"
-
-    # 等待启动
-    echo ""
-    echo "等待服务启动..."
-    sleep 5
-
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo ""
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_lv}  ✅ CLIProxyAPI 部署完成！${gl_bai}"
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "API 地址:    ${gl_huang}http://${server_ip}:${api_port}/v1${gl_bai}"
-    echo -e "管理面板:    ${gl_huang}http://${server_ip}:${api_port}/management.html${gl_bai}"
-    echo -e "管理密钥:    ${gl_huang}${secret_key}${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【说明】${gl_bai}"
-    echo "  - 管理面板首次访问会自动下载前端资源"
-    echo "  - 请在管理面板中配置 OAuth 登录或 API Key"
-    echo "  - 建议配置 TLS 以确保传输安全"
-    if [ -n "$skipped_ports" ]; then
-        echo ""
-        echo -e "${gl_huang}  ⚠️ 跳过的端口:${skipped_ports}（被其他服务占用）${gl_bai}"
-        echo -e "${gl_huang}  如需 OAuth 登录，请先停止占用端口的服务后重新部署${gl_bai}"
-    fi
-    echo ""
-
-    break_end
-}
-
-# 更新服务
-cpa_update() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  更新 CLIProxyAPI${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(cpa_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ CLIProxyAPI 未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo "正在拉取最新镜像..."
-    docker pull "$CPA_IMAGE"
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 镜像拉取失败${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo ""
-    echo "正在重启服务..."
-    cd "$CPA_INSTALL_DIR" || return 1
-    $compose_cmd down
-    $compose_cmd up -d
-
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo -e "${gl_lv}✅ 更新完成${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 重启失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 查看状态
-cpa_status() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  CLIProxyAPI 状态${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(cpa_check_status)
-    local api_port=$(cpa_get_port)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    case "$status" in
-        "running")
-            echo -e "状态: ${gl_lv}✅ 运行中${gl_bai}"
-            echo -e "API 地址:  ${gl_huang}http://${server_ip}:${api_port}/v1${gl_bai}"
-            echo -e "管理面板:  ${gl_huang}http://${server_ip}:${api_port}/management.html${gl_bai}"
-            echo ""
-            echo "容器详情:"
-            docker ps --filter "name=$CPA_CONTAINER_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            ;;
-        "stopped")
-            echo -e "状态: ${gl_hong}❌ 已停止${gl_bai}"
-            echo ""
-            echo "请使用「启动服务」选项启动"
-            ;;
-        "installed_no_container")
-            echo -e "状态: ${gl_huang}⚠️ 已安装但容器未创建${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」重新部署"
-            ;;
-        "not_installed")
-            echo -e "状态: ${gl_hui}未安装${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」选项安装"
-            ;;
-    esac
-
-    echo ""
-    break_end
-}
-
-# 查看日志
-cpa_logs() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  CLIProxyAPI 日志${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}按 Ctrl+C 退出日志查看${gl_bai}"
-    echo ""
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd logs -f --tail 100
-    else
-        docker logs "$CPA_CONTAINER_NAME" -f --tail 100
-    fi
-}
-
-# 启动服务
-cpa_start() {
-    echo ""
-    echo "正在启动 CLIProxyAPI..."
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd up -d
-    else
-        docker start "$CPA_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        local api_port=$(cpa_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 启动成功${gl_bai}"
-        echo -e "API 地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 启动失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 停止服务
-cpa_stop() {
-    echo ""
-    echo "正在停止 CLIProxyAPI..."
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd stop
-    else
-        docker stop "$CPA_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        echo -e "${gl_lv}✅ 已停止${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 停止失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 重启服务
-cpa_restart() {
-    echo ""
-    echo "正在重启 CLIProxyAPI..."
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd restart
-    else
-        docker restart "$CPA_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        local api_port=$(cpa_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 重启成功${gl_bai}"
-        echo -e "API 地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 重启失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 查看配置信息
-cpa_show_config() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  CLIProxyAPI 配置信息${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local api_port=$(cpa_get_port)
-    local secret_key=$(cpa_get_secret)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo -e "安装目录:    ${gl_huang}$CPA_INSTALL_DIR${gl_bai}"
-    echo -e "配置文件:    ${gl_huang}$CPA_INSTALL_DIR/config.yaml${gl_bai}"
-    echo -e "令牌目录:    ${gl_huang}$CPA_INSTALL_DIR/auths${gl_bai}"
-    echo -e "日志目录:    ${gl_huang}$CPA_INSTALL_DIR/logs${gl_bai}"
-    echo -e "API 端口:    ${gl_huang}$api_port${gl_bai}"
-    echo -e "管理密钥:    ${gl_huang}${secret_key:-未设置}${gl_bai}"
-    echo -e "API 地址:    ${gl_huang}http://${server_ip}:${api_port}/v1${gl_bai}"
-    echo -e "管理面板:    ${gl_huang}http://${server_ip}:${api_port}/management.html${gl_bai}"
-
-    echo ""
-    break_end
-}
-
-# 修改端口
-cpa_change_port() {
-    echo ""
-    local current_port=$(cpa_get_port)
-    echo -e "当前 API 端口: ${gl_huang}$current_port${gl_bai}"
-    echo ""
-
-    read -e -p "请输入新的 API 端口: " new_port
-
-    if [ -z "$new_port" ]; then
-        echo "取消修改"
-        break_end
-        return 0
-    fi
-
-    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
-        echo -e "${gl_hong}❌ 无效的端口号: $new_port${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    if [ "$new_port" = "$current_port" ]; then
-        echo -e "${gl_huang}⚠️ 端口未改变${gl_bai}"
-        break_end
-        return 0
-    fi
-
-    # 先检查新端口是否可用（在停止服务之前）
-    if ! cpa_check_port "$new_port"; then
-        echo -e "${gl_hong}❌ 端口 $new_port 已被占用，请选择其他端口${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo ""
-    echo "正在修改端口..."
-
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 停止服务
-    cd "$CPA_INSTALL_DIR" && $compose_cmd down
-
-    # 重写 docker-compose.yml（只映射可用的 OAuth 端口）
-    local oauth_ports="8085 1455 54545 51121 11451"
-    {
-        echo "services:"
-        echo "  cli-proxy-api:"
-        echo "    image: ${CPA_IMAGE}"
-        echo "    container_name: ${CPA_CONTAINER_NAME}"
-        echo "    ports:"
-        echo "      - \"${new_port}:8317\""
-        for p in $oauth_ports; do
-            if cpa_check_port "$p"; then
-                echo "      - \"${p}:${p}\""
-            fi
-        done
-        echo "    volumes:"
-        echo "      - ./config.yaml:/CLIProxyAPI/config.yaml"
-        echo "      - ./auths:/root/.cli-proxy-api"
-        echo "      - ./logs:/CLIProxyAPI/logs"
-        echo "    restart: unless-stopped"
-    } > "$CPA_INSTALL_DIR/docker-compose.yml"
-
-    $compose_cmd up -d
-
-    if [ $? -eq 0 ]; then
-        echo "$new_port" > "$CPA_PORT_FILE"
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 端口修改成功${gl_bai}"
-        echo -e "API 地址: ${gl_huang}http://${server_ip}:${new_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 端口修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 修改管理密钥
-cpa_change_secret() {
-    echo ""
-    local current_secret=$(cpa_get_secret)
-    echo -e "当前管理密钥: ${gl_huang}${current_secret:-未设置}${gl_bai}"
-    echo ""
-
-    read -e -p "请输入新的管理密钥: " new_secret
-
-    if [ -z "$new_secret" ]; then
-        echo "未输入密钥，取消修改"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在修改管理密钥..."
-
-    # 更新 config.yaml 中的 secret-key（用 | 作分隔符避免特殊字符冲突）
-    if [ -f "$CPA_INSTALL_DIR/config.yaml" ]; then
-        sed -i "s|secret-key: .*|secret-key: \"$new_secret\"|" "$CPA_INSTALL_DIR/config.yaml"
-    fi
-
-    # 重启服务使配置生效
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd restart
-    else
-        docker restart "$CPA_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        echo "$new_secret" > "$CPA_SECRET_FILE"
-        local api_port=$(cpa_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 管理密钥修改成功${gl_bai}"
-        echo -e "新密钥: ${gl_huang}$new_secret${gl_bai}"
-        echo -e "API 地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 卸载
-cpa_uninstall() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}  卸载 CLIProxyAPI${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(cpa_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ CLIProxyAPI 未安装${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo -e "${gl_hong}⚠️ 此操作将删除 CLIProxyAPI 容器和镜像${gl_bai}"
-    echo ""
-    read -e -p "是否同时删除配置和数据？(y/n) [n]: " delete_data
-    echo ""
-    read -e -p "确认卸载？(y/n) [n]: " confirm
-
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "取消卸载"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在卸载..."
-
-    # 停止并删除容器
-    local compose_cmd=$(cpa_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CPA_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CPA_INSTALL_DIR" && $compose_cmd down --rmi all 2>/dev/null
-    else
-        docker stop "$CPA_CONTAINER_NAME" 2>/dev/null
-        docker rm "$CPA_CONTAINER_NAME" 2>/dev/null
-        docker rmi "$CPA_IMAGE" 2>/dev/null
-    fi
-
-    # 删除数据
-    if [ "$delete_data" = "y" ] || [ "$delete_data" = "Y" ]; then
-        rm -rf "$CPA_INSTALL_DIR"
-        echo -e "${gl_lv}✅ 容器、镜像和数据已全部删除${gl_bai}"
-    else
-        echo -e "${gl_lv}✅ 容器已删除，配置保留在 $CPA_INSTALL_DIR${gl_bai}"
-    fi
-
-    # 删除端口和密钥文件
-    rm -f "$CPA_PORT_FILE"
-    rm -f "$CPA_SECRET_FILE"
-
-    break_end
-}
-
-# CLIProxyAPI 管理主菜单
-manage_cliproxyapi() {
-    while true; do
-        clear
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  CLIProxyAPI 部署管理 (CLI转API代理)${gl_bai}"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo ""
-
-        # 显示当前状态
-        local status=$(cpa_check_status)
-        local api_port=$(cpa_get_port)
-
-        case "$status" in
-            "running")
-                echo -e "当前状态: ${gl_lv}✅ 运行中${gl_bai} (端口: ${api_port})"
-                ;;
-            "stopped")
-                echo -e "当前状态: ${gl_hong}❌ 已停止${gl_bai}"
-                ;;
-            "installed_no_container")
-                echo -e "当前状态: ${gl_huang}⚠️ 已安装但容器未创建${gl_bai}"
-                ;;
-            "not_installed")
-                echo -e "当前状态: ${gl_hui}未安装${gl_bai}"
-                ;;
-        esac
-
-        echo ""
-        echo -e "${gl_kjlan}[部署与更新]${gl_bai}"
-        echo "1. 一键部署（首次安装）"
-        echo "2. 更新服务"
-        echo ""
-        echo -e "${gl_kjlan}[服务管理]${gl_bai}"
-        echo "3. 查看状态"
-        echo "4. 查看日志"
-        echo "5. 启动服务"
-        echo "6. 停止服务"
-        echo "7. 重启服务"
-        echo ""
-        echo -e "${gl_kjlan}[配置与信息]${gl_bai}"
-        echo "8. 查看配置信息"
-        echo "9. 修改端口"
-        echo "10. 修改管理密钥"
-        echo ""
-        echo -e "${gl_kjlan}[卸载]${gl_bai}"
-        echo -e "${gl_hong}99. 卸载（删除容器+镜像）${gl_bai}"
-        echo ""
-        echo "0. 返回上级菜单"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择操作 [0-10, 99]: " choice
-
-        case $choice in
-            1)
-                cpa_deploy
-                ;;
-            2)
-                cpa_update
-                ;;
-            3)
-                cpa_status
-                ;;
-            4)
-                cpa_logs
-                ;;
-            5)
-                cpa_start
-                ;;
-            6)
-                cpa_stop
-                ;;
-            7)
-                cpa_restart
-                ;;
-            8)
-                cpa_show_config
-                ;;
-            9)
-                cpa_change_port
-                ;;
-            10)
-                cpa_change_secret
-                ;;
-            99)
-                cpa_uninstall
-                ;;
-            0)
-                return
-                ;;
-            *)
-                echo "无效的选择"
-                sleep 1
-                ;;
-        esac
-    done
-}
-
-#=============================================================================
-# Codex Console (OpenAI 批量注册控制台)
-#=============================================================================
-CODEX_CONSOLE_CONTAINER_NAME="codex-console"
-CODEX_CONSOLE_REPO="https://github.com/dou-jiang/codex-console.git"
-CODEX_CONSOLE_INSTALL_DIR="/opt/codex-console"
-CODEX_CONSOLE_DEFAULT_WEBUI_PORT="1455"
-CODEX_CONSOLE_DEFAULT_NOVNC_PORT="6080"
-CODEX_CONSOLE_PORT_FILE="/etc/codex-console-port"
-CODEX_CONSOLE_NOVNC_PORT_FILE="/etc/codex-console-novnc-port"
-CODEX_CONSOLE_DATA_DIR="/opt/codex-console/data"
-CODEX_CONSOLE_LOGS_DIR="/opt/codex-console/logs"
-
-# 获取当前 WebUI 端口
-codex_console_get_port() {
-    if [ -f "$CODEX_CONSOLE_PORT_FILE" ]; then
-        cat "$CODEX_CONSOLE_PORT_FILE"
-    else
-        echo "$CODEX_CONSOLE_DEFAULT_WEBUI_PORT"
-    fi
-}
-
-# 获取当前 noVNC 端口
-codex_console_get_novnc_port() {
-    if [ -f "$CODEX_CONSOLE_NOVNC_PORT_FILE" ]; then
-        cat "$CODEX_CONSOLE_NOVNC_PORT_FILE"
-    else
-        echo "$CODEX_CONSOLE_DEFAULT_NOVNC_PORT"
-    fi
-}
-
-# 检查状态
-codex_console_check_status() {
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CODEX_CONSOLE_CONTAINER_NAME}"; then
-        echo "running"
-    elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CODEX_CONSOLE_CONTAINER_NAME}"; then
-        echo "stopped"
-    elif [ -d "$CODEX_CONSOLE_INSTALL_DIR/.git" ]; then
-        echo "installed_no_container"
-    else
-        echo "not_installed"
-    fi
-}
-
-# 检查端口是否可用
-codex_console_check_port() {
-    local port=$1
-    if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-        return 1
-    fi
-    return 0
-}
-
-# 安装 Docker
-codex_console_install_docker() {
-    if command -v docker &>/dev/null; then
-        echo -e "${gl_lv}✅ Docker 已安装${gl_bai}"
-        return 0
-    fi
-
-    echo "正在安装 Docker..."
-    run_remote_script "https://get.docker.com" sh
-
-    if [ $? -eq 0 ]; then
-        systemctl enable docker
-        systemctl start docker
-        echo -e "${gl_lv}✅ Docker 安装成功${gl_bai}"
-        return 0
-    else
-        echo -e "${gl_hong}❌ Docker 安装失败${gl_bai}"
-        return 1
-    fi
-}
-
-# 获取 docker compose 命令
-codex_console_compose_cmd() {
-    if docker compose version &>/dev/null 2>&1; then
-        echo "docker compose"
-    elif command -v docker-compose &>/dev/null; then
-        echo "docker-compose"
-    else
-        echo ""
-    fi
-}
-
-# 一键部署
-codex_console_deploy() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  一键部署 Codex Console (OpenAI批量注册控制台)${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(codex_console_check_status)
-    if [ "$status" != "not_installed" ]; then
-        echo -e "${gl_huang}⚠️ Codex Console 已安装${gl_bai}"
-        read -e -p "是否重新部署？(y/n) [n]: " reinstall
-        if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then
-            break_end
-            return 0
-        fi
-        # 停止并删除现有容器
-        local compose_cmd=$(codex_console_compose_cmd)
-        if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-            cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd down 2>/dev/null
-        fi
-    fi
-
-    # [1/5] 安装 Docker
-    echo ""
-    echo -e "${gl_kjlan}[1/5] 检查 Docker 环境...${gl_bai}"
-    codex_console_install_docker || { break_end; return 1; }
-
-    # 检查 docker compose
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用，请检查 Docker 安装${gl_bai}"
-        break_end
-        return 1
-    fi
-    echo -e "${gl_lv}✅ $compose_cmd 可用${gl_bai}"
-
-    # [2/5] 克隆项目
-    echo ""
-    echo -e "${gl_kjlan}[2/5] 克隆 Codex Console 项目...${gl_bai}"
-    if [ -d "$CODEX_CONSOLE_INSTALL_DIR/.git" ]; then
-        echo "项目目录已存在，拉取最新代码..."
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && git pull
-    else
-        rm -rf "$CODEX_CONSOLE_INSTALL_DIR"
-        git clone "$CODEX_CONSOLE_REPO" "$CODEX_CONSOLE_INSTALL_DIR"
-    fi
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 项目克隆失败${gl_bai}"
-        break_end
-        return 1
-    fi
-    echo -e "${gl_lv}✅ 项目代码就绪${gl_bai}"
-
-    # [3/5] 配置参数
-    echo ""
-    echo -e "${gl_kjlan}[3/5] 配置服务参数...${gl_bai}"
-    echo ""
-
-    # WebUI 端口
-    local webui_port="$CODEX_CONSOLE_DEFAULT_WEBUI_PORT"
-    read -e -p "请输入 WebUI 端口 [$CODEX_CONSOLE_DEFAULT_WEBUI_PORT]: " input_port
-    if [ -n "$input_port" ]; then
-        webui_port="$input_port"
-    fi
-    while ! codex_console_check_port "$webui_port"; do
-        echo -e "${gl_hong}⚠️ 端口 $webui_port 已被占用${gl_bai}"
-        read -e -p "请输入 WebUI 端口: " webui_port
-        [ -z "$webui_port" ] && webui_port="$CODEX_CONSOLE_DEFAULT_WEBUI_PORT"
-    done
-    echo -e "${gl_lv}✅ WebUI 端口 $webui_port 可用${gl_bai}"
-
-    # noVNC 端口
-    echo ""
-    local novnc_port="$CODEX_CONSOLE_DEFAULT_NOVNC_PORT"
-    read -e -p "请输入 noVNC 端口 [$CODEX_CONSOLE_DEFAULT_NOVNC_PORT]: " input_novnc
-    if [ -n "$input_novnc" ]; then
-        novnc_port="$input_novnc"
-    fi
-    while ! codex_console_check_port "$novnc_port"; do
-        echo -e "${gl_hong}⚠️ 端口 $novnc_port 已被占用${gl_bai}"
-        read -e -p "请输入 noVNC 端口: " novnc_port
-        [ -z "$novnc_port" ] && novnc_port="$CODEX_CONSOLE_DEFAULT_NOVNC_PORT"
-    done
-    echo -e "${gl_lv}✅ noVNC 端口 $novnc_port 可用${gl_bai}"
-
-    # 访问密码
-    echo ""
-    local access_password="admin123"
-    read -e -p "设置访问密码 [admin123]: " input_password
-    if [ -n "$input_password" ]; then
-        access_password="$input_password"
-    else
-        echo -e "${gl_hong}⚠️ 警告：当前使用默认弱密码 admin123，公网部署有被爆破风险！${gl_bai}"
-        echo -e "${gl_hong}   强烈建议部署完成后立即通过菜单修改访问密码${gl_bai}"
-    fi
-
-    # [4/5] 生成 docker-compose 配置
-    echo ""
-    echo -e "${gl_kjlan}[4/5] 生成配置并构建镜像...${gl_bai}"
-
-    # 创建数据目录
-    mkdir -p "$CODEX_CONSOLE_DATA_DIR"
-    mkdir -p "$CODEX_CONSOLE_LOGS_DIR"
-
-    # 覆写 docker-compose.yml 用自定义端口
-    cat > "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" << COMPOSEEOF
-version: '3.8'
-
-services:
-  webui:
-    build: .
-    container_name: ${CODEX_CONSOLE_CONTAINER_NAME}
-    shm_size: "1gb"
-    ports:
-      - "${webui_port}:1455"
-      - "${novnc_port}:6080"
-    environment:
-      - WEBUI_HOST=0.0.0.0
-      - WEBUI_PORT=1455
-      - DISPLAY=:99
-      - ENABLE_VNC=1
-      - VNC_PORT=5900
-      - NOVNC_PORT=6080
-      - DEBUG=0
-      - LOG_LEVEL=info
-      - WEBUI_ACCESS_PASSWORD=${access_password}
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    restart: unless-stopped
-COMPOSEEOF
-
-    # 构建并启动
-    cd "$CODEX_CONSOLE_INSTALL_DIR" || return 1
-    $compose_cmd build
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 镜像构建失败${gl_bai}"
-        break_end
-        return 1
-    fi
-    echo -e "${gl_lv}✅ 镜像构建成功${gl_bai}"
-
-    # [5/5] 启动服务
-    echo ""
-    echo -e "${gl_kjlan}[5/5] 启动 Codex Console 服务...${gl_bai}"
-
-    $compose_cmd up -d
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-        echo ""
-        echo -e "${gl_huang}提示: 可尝试手动执行以下命令后重试:${gl_bai}"
-        echo "  systemctl restart docker"
-        break_end
-        return 1
-    fi
-
-    # 保存端口配置
-    echo "$webui_port" > "$CODEX_CONSOLE_PORT_FILE"
-    echo "$novnc_port" > "$CODEX_CONSOLE_NOVNC_PORT_FILE"
-
-    # 等待启动
-    echo ""
-    echo "等待服务启动..."
-    sleep 5
-
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo ""
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_lv}  ✅ Codex Console 部署完成！${gl_bai}"
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "WebUI 地址:  ${gl_huang}http://${server_ip}:${webui_port}${gl_bai}"
-    echo -e "noVNC 地址:  ${gl_huang}http://${server_ip}:${novnc_port}${gl_bai}"
-    echo -e "访问密码:    ${gl_huang}${access_password}${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}【说明】${gl_bai}"
-    echo "  - WebUI 是主控制台界面，用于任务管理和批量操作"
-    echo "  - noVNC 是浏览器远程桌面，用于自动化绑卡可视化"
-    echo "  - 请务必修改默认密码以确保安全"
-    echo ""
-
-    break_end
-}
-
-# 更新项目
-codex_console_update() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  更新 Codex Console${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(codex_console_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ Codex Console 未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo "正在拉取最新代码..."
-    cd "$CODEX_CONSOLE_INSTALL_DIR" && git pull
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 代码拉取失败${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo ""
-    echo "正在重新构建镜像..."
-    $compose_cmd build --no-cache
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 镜像构建失败${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo ""
-    echo "正在重启服务..."
-    $compose_cmd down
-    $compose_cmd up -d
-
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo -e "${gl_lv}✅ 更新完成${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 重启失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 查看状态
-codex_console_status() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Codex Console 状态${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(codex_console_check_status)
-    local webui_port=$(codex_console_get_port)
-    local novnc_port=$(codex_console_get_novnc_port)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    case "$status" in
-        "running")
-            echo -e "状态: ${gl_lv}✅ 运行中${gl_bai}"
-            echo -e "WebUI:  ${gl_huang}http://${server_ip}:${webui_port}${gl_bai}"
-            echo -e "noVNC:  ${gl_huang}http://${server_ip}:${novnc_port}${gl_bai}"
-            echo ""
-            echo "容器详情:"
-            docker ps --filter "name=$CODEX_CONSOLE_CONTAINER_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            ;;
-        "stopped")
-            echo -e "状态: ${gl_hong}❌ 已停止${gl_bai}"
-            echo ""
-            echo "请使用「启动服务」选项启动"
-            ;;
-        "installed_no_container")
-            echo -e "状态: ${gl_huang}⚠️ 已安装但容器未创建${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」重新部署"
-            ;;
-        "not_installed")
-            echo -e "状态: ${gl_hui}未安装${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」选项安装"
-            ;;
-    esac
-
-    echo ""
-    break_end
-}
-
-# 查看日志
-codex_console_logs() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Codex Console 日志${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}按 Ctrl+C 退出日志查看${gl_bai}"
-    echo ""
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd logs -f --tail 100
-    else
-        docker logs "$CODEX_CONSOLE_CONTAINER_NAME" -f --tail 100
-    fi
-}
-
-# 启动服务
-codex_console_start() {
-    echo ""
-    echo "正在启动 Codex Console..."
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd up -d
-    else
-        docker start "$CODEX_CONSOLE_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        local webui_port=$(codex_console_get_port)
-        local novnc_port=$(codex_console_get_novnc_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 启动成功${gl_bai}"
-        echo -e "WebUI: ${gl_huang}http://${server_ip}:${webui_port}${gl_bai}"
-        echo -e "noVNC: ${gl_huang}http://${server_ip}:${novnc_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 启动失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 停止服务
-codex_console_stop() {
-    echo ""
-    echo "正在停止 Codex Console..."
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd stop
-    else
-        docker stop "$CODEX_CONSOLE_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        echo -e "${gl_lv}✅ 已停止${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 停止失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 重启服务
-codex_console_restart() {
-    echo ""
-    echo "正在重启 Codex Console..."
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd restart
-    else
-        docker restart "$CODEX_CONSOLE_CONTAINER_NAME"
-    fi
-
-    if [ $? -eq 0 ]; then
-        local webui_port=$(codex_console_get_port)
-        local novnc_port=$(codex_console_get_novnc_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 重启成功${gl_bai}"
-        echo -e "WebUI: ${gl_huang}http://${server_ip}:${webui_port}${gl_bai}"
-        echo -e "noVNC: ${gl_huang}http://${server_ip}:${novnc_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 重启失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 修改端口
-codex_console_change_port() {
-    echo ""
-    local current_webui=$(codex_console_get_port)
-    local current_novnc=$(codex_console_get_novnc_port)
-    echo -e "当前 WebUI 端口: ${gl_huang}$current_webui${gl_bai}"
-    echo -e "当前 noVNC 端口: ${gl_huang}$current_novnc${gl_bai}"
-    echo ""
-
-    echo "修改哪个端口？"
-    echo "1. WebUI 端口"
-    echo "2. noVNC 端口"
-    echo "3. 同时修改两个"
-    echo "0. 取消"
-    echo ""
-    read -e -p "请选择 [0-3]: " port_choice
-
-    local new_webui="$current_webui"
-    local new_novnc="$current_novnc"
-
-    case $port_choice in
-        1)
-            read -e -p "请输入新的 WebUI 端口: " new_webui
-            [ -z "$new_webui" ] && { echo "取消修改"; break_end; return 0; }
-            ;;
-        2)
-            read -e -p "请输入新的 noVNC 端口: " new_novnc
-            [ -z "$new_novnc" ] && { echo "取消修改"; break_end; return 0; }
-            ;;
-        3)
-            read -e -p "请输入新的 WebUI 端口: " new_webui
-            [ -z "$new_webui" ] && new_webui="$current_webui"
-            read -e -p "请输入新的 noVNC 端口: " new_novnc
-            [ -z "$new_novnc" ] && new_novnc="$current_novnc"
-            ;;
-        *)
-            return 0
-            ;;
-    esac
-
-    # 验证端口
-    for p in "$new_webui" "$new_novnc"; do
-        if ! [[ "$p" =~ ^[0-9]+$ ]] || [ "$p" -lt 1 ] || [ "$p" -gt 65535 ]; then
-            echo -e "${gl_hong}❌ 无效的端口号: $p${gl_bai}"
-            break_end
-            return 1
-        fi
-    done
-
-    if [ "$new_webui" = "$current_webui" ] && [ "$new_novnc" = "$current_novnc" ]; then
-        echo -e "${gl_huang}⚠️ 端口未改变${gl_bai}"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在修改端口..."
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    # 获取当前密码
-    local current_password=$(docker inspect "$CODEX_CONSOLE_CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep "WEBUI_ACCESS_PASSWORD=" | cut -d= -f2-)
-    [ -z "$current_password" ] && current_password="admin123"
-
-    # 停止服务
-    cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd down
-
-    # 重写 docker-compose.yml
-    cat > "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" << COMPOSEEOF
-version: '3.8'
-
-services:
-  webui:
-    build: .
-    container_name: ${CODEX_CONSOLE_CONTAINER_NAME}
-    shm_size: "1gb"
-    ports:
-      - "${new_webui}:1455"
-      - "${new_novnc}:6080"
-    environment:
-      - WEBUI_HOST=0.0.0.0
-      - WEBUI_PORT=1455
-      - DISPLAY=:99
-      - ENABLE_VNC=1
-      - VNC_PORT=5900
-      - NOVNC_PORT=6080
-      - DEBUG=0
-      - LOG_LEVEL=info
-      - WEBUI_ACCESS_PASSWORD=${current_password}
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    restart: unless-stopped
-COMPOSEEOF
-
-    $compose_cmd up -d
-
-    if [ $? -eq 0 ]; then
-        echo "$new_webui" > "$CODEX_CONSOLE_PORT_FILE"
-        echo "$new_novnc" > "$CODEX_CONSOLE_NOVNC_PORT_FILE"
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 端口修改成功${gl_bai}"
-        echo -e "WebUI: ${gl_huang}http://${server_ip}:${new_webui}${gl_bai}"
-        echo -e "noVNC: ${gl_huang}http://${server_ip}:${new_novnc}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 端口修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 修改访问密码
-codex_console_change_password() {
-    echo ""
-    read -e -p "请输入新的访问密码: " new_password
-
-    if [ -z "$new_password" ]; then
-        echo "未输入密码，取消修改"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在修改密码..."
-
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -z "$compose_cmd" ]; then
-        echo -e "${gl_hong}❌ docker compose 不可用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    local webui_port=$(codex_console_get_port)
-    local novnc_port=$(codex_console_get_novnc_port)
-
-    # 停止服务
-    cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd down
-
-    # 重写 docker-compose.yml
-    cat > "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" << COMPOSEEOF
-version: '3.8'
-
-services:
-  webui:
-    build: .
-    container_name: ${CODEX_CONSOLE_CONTAINER_NAME}
-    shm_size: "1gb"
-    ports:
-      - "${webui_port}:1455"
-      - "${novnc_port}:6080"
-    environment:
-      - WEBUI_HOST=0.0.0.0
-      - WEBUI_PORT=1455
-      - DISPLAY=:99
-      - ENABLE_VNC=1
-      - VNC_PORT=5900
-      - NOVNC_PORT=6080
-      - DEBUG=0
-      - LOG_LEVEL=info
-      - WEBUI_ACCESS_PASSWORD=${new_password}
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    restart: unless-stopped
-COMPOSEEOF
-
-    $compose_cmd up -d
-
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo -e "${gl_lv}✅ 密码修改成功${gl_bai}"
-        echo -e "新密码: ${gl_huang}$new_password${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 密码修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 查看配置信息
-codex_console_show_config() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  Codex Console 配置信息${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local webui_port=$(codex_console_get_port)
-    local novnc_port=$(codex_console_get_novnc_port)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo -e "安装目录:    ${gl_huang}$CODEX_CONSOLE_INSTALL_DIR${gl_bai}"
-    echo -e "数据目录:    ${gl_huang}$CODEX_CONSOLE_DATA_DIR${gl_bai}"
-    echo -e "日志目录:    ${gl_huang}$CODEX_CONSOLE_LOGS_DIR${gl_bai}"
-    echo -e "WebUI 端口:  ${gl_huang}$webui_port${gl_bai}"
-    echo -e "noVNC 端口:  ${gl_huang}$novnc_port${gl_bai}"
-    echo -e "WebUI 地址:  ${gl_huang}http://${server_ip}:${webui_port}${gl_bai}"
-    echo -e "noVNC 地址:  ${gl_huang}http://${server_ip}:${novnc_port}${gl_bai}"
-
-    echo ""
-    echo "容器环境变量:"
-    docker inspect "$CODEX_CONSOLE_CONTAINER_NAME" --format '{{range .Config.Env}}  {{println .}}{{end}}' 2>/dev/null | grep -E "WEBUI_|VNC|DISPLAY|DEBUG|LOG_LEVEL"
-
-    echo ""
-    break_end
-}
-
-# 卸载
-codex_console_uninstall() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}  卸载 Codex Console${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(codex_console_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ Codex Console 未安装${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo -e "${gl_hong}⚠️ 此操作将删除 Codex Console 容器和镜像${gl_bai}"
-    echo ""
-    read -e -p "是否同时删除项目目录和数据？(y/n) [n]: " delete_data
-    echo ""
-    read -e -p "确认卸载？(y/n) [n]: " confirm
-
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "取消卸载"
-        break_end
-        return 0
-    fi
-
-    echo ""
-    echo "正在卸载..."
-
-    # 停止并删除容器
-    local compose_cmd=$(codex_console_compose_cmd)
-    if [ -n "$compose_cmd" ] && [ -f "$CODEX_CONSOLE_INSTALL_DIR/docker-compose.yml" ]; then
-        cd "$CODEX_CONSOLE_INSTALL_DIR" && $compose_cmd down --rmi local 2>/dev/null
-    else
-        docker stop "$CODEX_CONSOLE_CONTAINER_NAME" 2>/dev/null
-        docker rm "$CODEX_CONSOLE_CONTAINER_NAME" 2>/dev/null
-    fi
-
-    # 删除项目目录和数据
-    if [ "$delete_data" = "y" ] || [ "$delete_data" = "Y" ]; then
-        rm -rf "$CODEX_CONSOLE_INSTALL_DIR"
-        echo -e "${gl_lv}✅ 容器、镜像和项目数据已全部删除${gl_bai}"
-    else
-        echo -e "${gl_lv}✅ 容器已删除，项目目录保留在 $CODEX_CONSOLE_INSTALL_DIR${gl_bai}"
-    fi
-
-    # 删除端口配置文件
-    rm -f "$CODEX_CONSOLE_PORT_FILE"
-    rm -f "$CODEX_CONSOLE_NOVNC_PORT_FILE"
-
-    break_end
-}
-
-# Codex Console 管理主菜单
-manage_codex_console() {
-    while true; do
-        clear
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  Codex Console 部署管理 (OpenAI批量注册)${gl_bai}"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo ""
-
-        # 显示当前状态
-        local status=$(codex_console_check_status)
-        local webui_port=$(codex_console_get_port)
-        local novnc_port=$(codex_console_get_novnc_port)
-
-        case "$status" in
-            "running")
-                echo -e "当前状态: ${gl_lv}✅ 运行中${gl_bai} (WebUI: ${webui_port} | noVNC: ${novnc_port})"
-                ;;
-            "stopped")
-                echo -e "当前状态: ${gl_hong}❌ 已停止${gl_bai}"
-                ;;
-            "installed_no_container")
-                echo -e "当前状态: ${gl_huang}⚠️ 已安装但容器未创建${gl_bai}"
-                ;;
-            "not_installed")
-                echo -e "当前状态: ${gl_hui}未安装${gl_bai}"
-                ;;
-        esac
-
-        echo ""
-        echo -e "${gl_kjlan}[部署与更新]${gl_bai}"
-        echo "1. 一键部署（首次安装）"
-        echo "2. 更新项目"
-        echo ""
-        echo -e "${gl_kjlan}[服务管理]${gl_bai}"
-        echo "3. 查看状态"
-        echo "4. 查看日志"
-        echo "5. 启动服务"
-        echo "6. 停止服务"
-        echo "7. 重启服务"
-        echo ""
-        echo -e "${gl_kjlan}[配置与信息]${gl_bai}"
-        echo "8. 查看配置信息"
-        echo "9. 修改端口"
-        echo "10. 修改访问密码"
-        echo ""
-        echo -e "${gl_kjlan}[卸载]${gl_bai}"
-        echo -e "${gl_hong}99. 卸载（删除容器+镜像）${gl_bai}"
-        echo ""
-        echo "0. 返回上级菜单"
-        echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择操作 [0-10, 99]: " choice
-
-        case $choice in
-            1)
-                codex_console_deploy
-                ;;
-            2)
-                codex_console_update
-                ;;
-            3)
-                codex_console_status
-                ;;
-            4)
-                codex_console_logs
-                ;;
-            5)
-                codex_console_start
-                ;;
-            6)
-                codex_console_stop
-                ;;
-            7)
-                codex_console_restart
-                ;;
-            8)
-                codex_console_show_config
-                ;;
-            9)
-                codex_console_change_port
-                ;;
-            10)
-                codex_console_change_password
-                ;;
-            99)
-                codex_console_uninstall
-                ;;
-            0)
-                return
-                ;;
-            *)
-                echo "无效的选择"
-                sleep 1
-                ;;
-        esac
-    done
-}
-
-#=============================================================================
-# OAI2 令牌注册面板 (dan-web)
-#=============================================================================
-OAI2_INSTALL_DIR="/opt/oai2"
-OAI2_DEFAULT_PORT="25666"
-OAI2_PORT_FILE="/etc/oai2-port"
-OAI2_TOKEN_FILE="/etc/oai2-token"
-OAI2_BINARY_NAME="dan-web-linux-amd64"
-OAI2_SERVICE_NAME="oai2"
-
-# 获取当前端口
-oai2_get_port() {
-    if [ -f "$OAI2_PORT_FILE" ]; then
-        cat "$OAI2_PORT_FILE"
-    else
-        echo "$OAI2_DEFAULT_PORT"
-    fi
-}
-
-# 获取登录 Token
-oai2_get_token() {
-    if [ -f "$OAI2_TOKEN_FILE" ]; then
-        cat "$OAI2_TOKEN_FILE"
-    else
-        echo ""
-    fi
-}
-
-# 检查端口是否可用
-oai2_check_port() {
-    local port=$1
-    if ss -lntp 2>/dev/null | grep -q ":${port} "; then
-        return 1
-    fi
-    return 0
-}
-
-# 检查状态
-oai2_check_status() {
-    if systemctl is-active --quiet "$OAI2_SERVICE_NAME" 2>/dev/null; then
-        echo "running"
-    elif [ -f "/etc/systemd/system/${OAI2_SERVICE_NAME}.service" ]; then
-        echo "stopped"
-    elif [ -d "$OAI2_INSTALL_DIR" ] && [ -f "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME" ]; then
-        echo "installed_no_service"
-    else
-        echo "not_installed"
-    fi
-}
-
-# 生成默认配置文件
-oai2_generate_config() {
-    local port="$1"
-    local web_token="$2"
-    local cpa_url="$3"
-    local cpa_token="$4"
-
-    mkdir -p "$OAI2_INSTALL_DIR/config"
-    cat > "$OAI2_INSTALL_DIR/config/web_config.json" << 'CONFIGEOF'
-{
-  "target_min_tokens": 15000,
-  "auto_fill_start_gap": 1,
-  "check_interval_minutes": 1,
-  "manual_default_threads": 68,
-  "manual_register_retries": 3,
-  "web_token": "WEB_TOKEN_PLACEHOLDER",
-  "enabled_email_domains": [
-    "*.icoa.qzz.io",
-    "*.icoe.pp.ua",
-    "*.icoa.pp.ua",
-    "*.uoou.cc.cd",
-    "*.icoa.us.ci",
-    "icoa.vex.mom",
-    "icoa.zle.ee",
-    "icoamail.sylu.net",
-    "chat-ui.webn.cc",
-    "codex.vision.moe",
-    "*.ice.qq11.top",
-    "*.myanglealtman.tech",
-    "*.ice.lyzswx.eu.org",
-    "a.i00.de5.net",
-    "*.ice.aoko.cc.cd",
-    "*.ice.aoko.eu.cc",
-    "*.ice.chaldea.eu.cc",
-    "*.ice.mssk.eu.cc",
-    "*.ice.mssk.qzz.io",
-    "*.linux.archerguo.de5.net",
-    "*.linux.airforceone.online",
-    "*.ice.kitakamis.online",
-    "*.ice.0987134.xyz",
-    "*.ice.icecodex.us.ci",
-    "*.ice.oo.oogoo.top",
-    "*.ice.jiayou0328.us.ci",
-    "icoa.raw.mom",
-    "icoa.raw.best",
-    "*.icecream.707979.xyz",
-    "*.ice.help.itbasee.top",
-    "*.ice.863973.dpdns.org",
-    "*.ice.tinytiger.top",
-    "*.ice.yucici.qzz.io",
-    "*.love.biaozi.de5.net",
-    "*.love.dogge.de5.net",
-    "*.love.mobil.dpdns.org",
-    "*.love.vercel.dpdns.org",
-    "*.love.google.nyc.mn"
-  ],
-  "mail_domain_options": [
-    "*.icoa.qzz.io",
-    "*.icoe.pp.ua",
-    "*.icoa.pp.ua",
-    "*.uoou.cc.cd",
-    "*.icoa.ccwu.cc",
-    "*.icoa.us.ci",
-    "icoa.vex.mom",
-    "icoa.zle.ee",
-    "icoamail.sylu.net",
-    "chat-ui.webn.cc",
-    "codex.vision.moe",
-    "*.ice.qq11.top",
-    "*.myanglealtman.tech",
-    "*.ice.lyzswx.eu.org",
-    "a.i00.de5.net",
-    "*.ice.aoko.cc.cd",
-    "*.ice.aoko.eu.cc",
-    "*.ice.chaldea.eu.cc",
-    "*.ice.mssk.eu.cc",
-    "*.ice.mssk.qzz.io",
-    "*.linux.archerguo.de5.net",
-    "*.linux.airforceone.online",
-    "*.ice.kitakamis.online",
-    "*.ice.0987134.xyz",
-    "*.ice.icecodex.us.ci",
-    "*.ice.icecodex.ccwu.cc",
-    "*.ice.oo.oogoo.top",
-    "*.ice.jiayou0328.ccwu.cc",
-    "*.ice.jiayou0328.us.ci",
-    "icoa.raw.mom",
-    "icoa.raw.best",
-    "*.icecream.707979.xyz",
-    "*.ice.help.itbasee.top",
-    "*.ice.863973.dpdns.org",
-    "*.ice.tinytiger.top",
-    "*.ice.yucici.qzz.io",
-    "*.love.biaozi.de5.net",
-    "*.love.dogge.de5.net",
-    "*.love.mobil.dpdns.org",
-    "*.love.vercel.dpdns.org",
-    "*.love.google.nyc.mn"
-  ],
-  "default_proxy": "http://127.0.0.1:7897",
-  "use_registration_proxy": false,
-  "cpa_base_url": "CPA_URL_PLACEHOLDER",
-  "cpa_token": "CPA_TOKEN_PLACEHOLDER",
-  "mail_api_url": "https://mailapizv.uton.me",
-  "mail_api_key": "linuxdo",
-  "port": PORT_PLACEHOLDER
-}
-CONFIGEOF
-
-    # 替换占位符
-    sed -i "s|WEB_TOKEN_PLACEHOLDER|${web_token}|g" "$OAI2_INSTALL_DIR/config/web_config.json"
-    sed -i "s|CPA_URL_PLACEHOLDER|${cpa_url}|g" "$OAI2_INSTALL_DIR/config/web_config.json"
-    sed -i "s|CPA_TOKEN_PLACEHOLDER|${cpa_token}|g" "$OAI2_INSTALL_DIR/config/web_config.json"
-    sed -i "s|PORT_PLACEHOLDER|${port}|g" "$OAI2_INSTALL_DIR/config/web_config.json"
-}
-
-# 创建 systemd 服务
-oai2_create_service() {
-    cat > "/etc/systemd/system/${OAI2_SERVICE_NAME}.service" << EOF
-[Unit]
-Description=OAI2 Token Registration Panel (dan-web)
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=${OAI2_INSTALL_DIR}
-ExecStart=${OAI2_INSTALL_DIR}/${OAI2_BINARY_NAME}
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    systemctl daemon-reload
-}
-
-# 一键部署
-oai2_deploy() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  一键部署 OAI2 令牌注册面板 (dan-web)${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(oai2_check_status)
-    if [ "$status" != "not_installed" ]; then
-        echo -e "${gl_huang}⚠️ OAI2 已安装${gl_bai}"
-        read -e -p "是否重新部署？(y/n) [n]: " reinstall
-        if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then
-            break_end
-            return 0
-        fi
-        # 停止现有服务
-        systemctl stop "$OAI2_SERVICE_NAME" 2>/dev/null
-        systemctl disable "$OAI2_SERVICE_NAME" 2>/dev/null
-    fi
-
-    # [1/5] 获取二进制文件
-    echo ""
-    echo -e "${gl_kjlan}[1/5] 获取 OAI2 程序...${gl_bai}"
-
-    local OAI2_RAR_NAME="OAI2_Codex_zhuceji.rar"
-    local OAI2_RAR_PATH="/root/${OAI2_RAR_NAME}"
-
-    if [ -f "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME" ]; then
-        echo -e "${gl_lv}✅ 二进制文件已存在，跳过解压${gl_bai}"
-    else
-        mkdir -p "$OAI2_INSTALL_DIR"
-
-        # 检查安装包是否存在
-        if [ ! -f "$OAI2_RAR_PATH" ]; then
-            echo -e "${gl_hong}❌ 未找到安装包: ${OAI2_RAR_PATH}${gl_bai}"
-            echo ""
-            echo -e "${gl_huang}请先将 ${OAI2_RAR_NAME} 上传到 /root/ 目录下，再重新运行${gl_bai}"
-            echo -e "${gl_huang}例如: scp ${OAI2_RAR_NAME} root@服务器IP:/root/${gl_bai}"
-            break_end
-            return 1
-        fi
-
-        # 安装 unrar
-        if ! command -v unrar &>/dev/null; then
-            echo "正在安装解压工具..."
-            apt install -y unrar-free 2>/dev/null || apt install -y unrar 2>/dev/null
-        fi
-
-        echo "正在解压安装包..."
-        cd "$OAI2_INSTALL_DIR" && unrar x -o+ "$OAI2_RAR_PATH"
-
-        if [ ! -f "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME" ]; then
-            echo -e "${gl_hong}❌ 解压后未找到 ${OAI2_BINARY_NAME}，请检查安装包内容${gl_bai}"
-            break_end
-            return 1
-        fi
-
-        # 删除 Windows 版本，节省空间
-        rm -f "$OAI2_INSTALL_DIR/dan-web-windows-amd64.exe" 2>/dev/null
-    fi
-
-    chmod +x "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"
-    echo -e "${gl_lv}✅ 程序准备就绪${gl_bai}"
-
-    # [2/5] 配置端口
-    echo ""
-    echo -e "${gl_kjlan}[2/5] 配置服务参数...${gl_bai}"
-    echo ""
-
-    local api_port="$OAI2_DEFAULT_PORT"
-    read -e -p "请输入面板端口 [$OAI2_DEFAULT_PORT]: " input_port
-    if [ -n "$input_port" ]; then
-        api_port="$input_port"
-    fi
-    while ! oai2_check_port "$api_port"; do
-        echo -e "${gl_hong}⚠️ 端口 $api_port 已被占用${gl_bai}"
-        read -e -p "请输入面板端口: " api_port
-        [ -z "$api_port" ] && api_port="$OAI2_DEFAULT_PORT"
-    done
-    echo -e "${gl_lv}✅ 面板端口 $api_port 可用${gl_bai}"
-
-    # [3/5] 配置登录 Token
-    echo ""
-    echo -e "${gl_kjlan}[3/5] 配置登录凭证...${gl_bai}"
-    echo ""
-
-    local web_token=$(openssl rand -hex 8 2>/dev/null || head -c 16 /dev/urandom | xxd -p | head -c 16)
-    read -e -p "设置面板登录 Token [随机生成: $web_token]: " input_token
-    if [ -n "$input_token" ]; then
-        web_token="$input_token"
-    fi
-    echo -e "${gl_lv}✅ 登录 Token 已设置${gl_bai}"
-
-    # CPA 连接配置
-    echo ""
-    local cpa_url="https://json.icoa.pp.ua/"
-    local cpa_token_val="linuxdo"
-    read -e -p "CPA 基本 URL [${cpa_url}]: " input_cpa_url
-    if [ -n "$input_cpa_url" ]; then
-        cpa_url="$input_cpa_url"
-    fi
-    read -e -p "CPA Token [${cpa_token_val}]: " input_cpa_token
-    if [ -n "$input_cpa_token" ]; then
-        cpa_token_val="$input_cpa_token"
-    fi
-
-    # [4/5] 生成配置文件
-    echo ""
-    echo -e "${gl_kjlan}[4/5] 生成配置文件...${gl_bai}"
-
-    oai2_generate_config "$api_port" "$web_token" "$cpa_url" "$cpa_token_val"
-    echo -e "${gl_lv}✅ 配置文件生成完成${gl_bai}"
-
-    # [5/5] 创建并启动服务
-    echo ""
-    echo -e "${gl_kjlan}[5/5] 启动 OAI2 服务...${gl_bai}"
-
-    oai2_create_service
-    systemctl enable "$OAI2_SERVICE_NAME" 2>/dev/null
-    systemctl start "$OAI2_SERVICE_NAME"
-
-    if [ $? -ne 0 ]; then
-        echo -e "${gl_hong}❌ 服务启动失败${gl_bai}"
-        echo ""
-        echo "尝试查看日志: journalctl -u $OAI2_SERVICE_NAME -n 20"
-        break_end
-        return 1
-    fi
-
-    # 保存配置
-    echo "$api_port" > "$OAI2_PORT_FILE"
-    echo "$web_token" > "$OAI2_TOKEN_FILE"
-
-    # 等待启动
-    sleep 3
-
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo ""
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_lv}  ✅ OAI2 部署完成！${gl_bai}"
-    echo -e "${gl_lv}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "面板地址:    ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    echo -e "登录 Token:  ${gl_huang}${web_token}${gl_bai}"
-    echo -e "CPA 地址:    ${gl_huang}${cpa_url}${gl_bai}"
-    echo -e "安装目录:    ${gl_huang}${OAI2_INSTALL_DIR}${gl_bai}"
-    echo -e "配置文件:    ${gl_huang}${OAI2_INSTALL_DIR}/config/web_config.json${gl_bai}"
-    echo ""
-
-    break_end
-}
-
-# 查看状态
-oai2_status() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OAI2 状态${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(oai2_check_status)
-    local api_port=$(oai2_get_port)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    case "$status" in
-        "running")
-            echo -e "状态: ${gl_lv}✅ 运行中${gl_bai}"
-            echo -e "面板地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-            echo ""
-            echo "服务详情:"
-            systemctl status "$OAI2_SERVICE_NAME" --no-pager -l 2>/dev/null | head -15
-            ;;
-        "stopped")
-            echo -e "状态: ${gl_hong}❌ 已停止${gl_bai}"
-            echo ""
-            echo "请使用「启动服务」选项启动"
-            ;;
-        "installed_no_service")
-            echo -e "状态: ${gl_huang}⚠️ 已安装但服务未创建${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」重新部署"
-            ;;
-        "not_installed")
-            echo -e "状态: ${gl_hui}未安装${gl_bai}"
-            echo ""
-            echo "请使用「一键部署」选项安装"
-            ;;
-    esac
-
-    echo ""
-    break_end
-}
-
-# 查看日志
-oai2_logs() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OAI2 日志${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-    echo -e "${gl_zi}按 Ctrl+C 退出日志查看${gl_bai}"
-    echo ""
-
-    journalctl -u "$OAI2_SERVICE_NAME" -f --no-pager -n 100
-}
-
-# 启动服务
-oai2_start() {
-    echo ""
-    echo "正在启动 OAI2..."
-    systemctl start "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        local api_port=$(oai2_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 启动成功${gl_bai}"
-        echo -e "面板地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 启动失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 停止服务
-oai2_stop() {
-    echo ""
-    echo "正在停止 OAI2..."
-    systemctl stop "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        echo -e "${gl_lv}✅ 已停止${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 停止失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 重启服务
-oai2_restart() {
-    echo ""
-    echo "正在重启 OAI2..."
-    systemctl restart "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        local api_port=$(oai2_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo -e "${gl_lv}✅ 重启成功${gl_bai}"
-        echo -e "面板地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 重启失败${gl_bai}"
-    fi
-
-    sleep 2
-    break_end
-}
-
-# 查看配置信息
-oai2_show_config() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  OAI2 配置信息${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local api_port=$(oai2_get_port)
-    local web_token=$(oai2_get_token)
-    local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-
-    echo -e "安装目录:    ${gl_huang}$OAI2_INSTALL_DIR${gl_bai}"
-    echo -e "配置文件:    ${gl_huang}$OAI2_INSTALL_DIR/config/web_config.json${gl_bai}"
-    echo -e "面板端口:    ${gl_huang}$api_port${gl_bai}"
-    echo -e "登录 Token:  ${gl_huang}${web_token:-未设置}${gl_bai}"
-    echo -e "面板地址:    ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-
-    # 显示 CPA 连接信息
-    if [ -f "$OAI2_INSTALL_DIR/config/web_config.json" ]; then
-        local cpa_url=$(grep -o '"cpa_base_url": *"[^"]*"' "$OAI2_INSTALL_DIR/config/web_config.json" | sed 's/"cpa_base_url": *"//;s/"$//')
-        echo -e "CPA 地址:    ${gl_huang}${cpa_url:-未配置}${gl_bai}"
-    fi
-
-    echo ""
-    break_end
-}
-
-# 修改端口
-oai2_change_port() {
-    echo ""
-    local current_port=$(oai2_get_port)
-    echo -e "当前面板端口: ${gl_huang}$current_port${gl_bai}"
-    echo ""
-
-    read -e -p "请输入新的面板端口: " new_port
-
-    if [ -z "$new_port" ]; then
-        echo "取消修改"
-        break_end
-        return 0
-    fi
-
-    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
-        echo -e "${gl_hong}❌ 无效的端口号: $new_port${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    if [ "$new_port" = "$current_port" ]; then
-        echo -e "${gl_huang}⚠️ 端口未改变${gl_bai}"
-        break_end
-        return 0
-    fi
-
-    if ! oai2_check_port "$new_port"; then
-        echo -e "${gl_hong}❌ 端口 $new_port 已被占用${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo "正在修改端口..."
-
-    # 更新配置文件中的端口
-    if [ -f "$OAI2_INSTALL_DIR/config/web_config.json" ]; then
-        sed -i "s|\"port\": *[0-9]*|\"port\": ${new_port}|" "$OAI2_INSTALL_DIR/config/web_config.json"
-    fi
-
-    echo "$new_port" > "$OAI2_PORT_FILE"
-
-    # 重启服务
-    systemctl restart "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 端口修改成功${gl_bai}"
-        echo -e "面板地址: ${gl_huang}http://${server_ip}:${new_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 端口修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 修改登录 Token
-oai2_change_token() {
-    echo ""
-    local current_token=$(oai2_get_token)
-    echo -e "当前登录 Token: ${gl_huang}${current_token:-未设置}${gl_bai}"
-    echo ""
-
-    read -e -p "请输入新的登录 Token: " new_token
-
-    if [ -z "$new_token" ]; then
-        echo "取消修改"
-        break_end
-        return 0
-    fi
-
-    echo "正在修改登录 Token..."
-
-    if [ -f "$OAI2_INSTALL_DIR/config/web_config.json" ]; then
-        sed -i "s|\"web_token\": *\"[^\"]*\"|\"web_token\": \"${new_token}\"|" "$OAI2_INSTALL_DIR/config/web_config.json"
-    fi
-
-    echo "$new_token" > "$OAI2_TOKEN_FILE"
-
-    systemctl restart "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        echo -e "${gl_lv}✅ 登录 Token 修改成功${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 修改失败${gl_bai}"
-    fi
-
-    break_end
-}
-
-# 更新二进制
-oai2_update() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}  更新 OAI2 (替换二进制文件)${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
-
-    local status=$(oai2_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ OAI2 未安装，请先执行一键部署${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    local OAI2_RAR_NAME="OAI2_Codex_zhuceji.rar"
-    local OAI2_RAR_PATH="/root/${OAI2_RAR_NAME}"
-
-    if [ ! -f "$OAI2_RAR_PATH" ]; then
-        echo -e "${gl_hong}❌ 未找到更新包: ${OAI2_RAR_PATH}${gl_bai}"
-        echo ""
-        echo -e "${gl_huang}请先将新版 ${OAI2_RAR_NAME} 上传到 /root/ 目录下${gl_bai}"
-        break_end
-        return 1
-    fi
-
-    echo -e "找到更新包: ${gl_huang}${OAI2_RAR_PATH}${gl_bai}"
-    echo -e "文件大小:   ${gl_huang}$(du -h "$OAI2_RAR_PATH" | awk '{print $1}')${gl_bai}"
-    echo ""
-    read -e -p "确认更新？配置文件不会被覆盖 (y/n) [n]: " confirm
-
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "取消更新"
-        break_end
-        return 0
-    fi
-
-    # 安装 unrar
-    if ! command -v unrar &>/dev/null; then
-        echo "正在安装解压工具..."
-        apt install -y unrar-free 2>/dev/null || apt install -y unrar 2>/dev/null
-        if ! command -v unrar &>/dev/null; then
-            echo -e "${gl_hong}❌ 解压工具安装失败${gl_bai}"
-            break_end
-            return 1
-        fi
-    fi
-
-    # 解压到临时目录（mktemp 保证唯一性）
-    local tmp_dir
-    tmp_dir=$(mktemp -d /tmp/oai2_update_XXXXXX) || {
-        echo -e "${gl_hong}❌ 无法创建临时目录${gl_bai}"
-        break_end
+ptm_acquire_config_lock() {
+    exec 233>"$PTM_CONFIG_LOCK_FILE"
+    flock -w 60 233 || {
+        echo -e "${gl_hong}获取配置锁超时${gl_bai}" >&2
         return 1
     }
-    echo "正在解压..."
-    (cd "$tmp_dir" && unrar x -o+ "$OAI2_RAR_PATH" >/dev/null 2>&1)
-
-    if [ ! -f "$tmp_dir/$OAI2_BINARY_NAME" ]; then
-        echo -e "${gl_hong}❌ 解压后未找到 ${OAI2_BINARY_NAME}${gl_bai}"
-        rm -rf "$tmp_dir"
-        break_end
-        return 1
-    fi
-
-    # 停止服务
-    echo "正在停止服务..."
-    systemctl stop "$OAI2_SERVICE_NAME" 2>/dev/null
-
-    # 备份旧二进制
-    if [ -f "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME" ]; then
-        mv "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME" "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak"
-    fi
-
-    # 替换二进制（检查返回值）
-    if ! mv "$tmp_dir/$OAI2_BINARY_NAME" "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"; then
-        echo -e "${gl_hong}❌ 替换二进制失败，正在回滚...${gl_bai}"
-        if [ -f "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak" ]; then
-            mv "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak" "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"
-        fi
-        rm -rf "$tmp_dir"
-        systemctl start "$OAI2_SERVICE_NAME" 2>/dev/null
-        break_end
-        return 1
-    fi
-    chmod +x "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"
-
-    # 清理临时目录
-    rm -rf "$tmp_dir"
-
-    # 启动服务
-    echo "正在启动服务..."
-    systemctl start "$OAI2_SERVICE_NAME"
-
-    if [ $? -eq 0 ]; then
-        # 更新成功，清理备份
-        rm -f "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak"
-        local api_port=$(oai2_get_port)
-        local server_ip=$(curl -s4 ip.sb 2>/dev/null || curl -s6 ip.sb 2>/dev/null || echo "服务器IP")
-        echo ""
-        echo -e "${gl_lv}✅ 更新完成${gl_bai}"
-        echo -e "面板地址: ${gl_huang}http://${server_ip}:${api_port}${gl_bai}"
-    else
-        echo -e "${gl_hong}❌ 启动失败，正在回滚...${gl_bai}"
-        if [ -f "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak" ]; then
-            mv "$OAI2_INSTALL_DIR/${OAI2_BINARY_NAME}.bak" "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"
-            systemctl start "$OAI2_SERVICE_NAME"
-            if [ $? -eq 0 ]; then
-                echo -e "${gl_lv}✅ 已回滚到旧版本${gl_bai}"
-            else
-                echo -e "${gl_hong}❌ 回滚后仍无法启动，请手动排查: journalctl -u $OAI2_SERVICE_NAME -n 20${gl_bai}"
-            fi
-        else
-            echo -e "${gl_hong}❌ 无备份可回滚，请重新部署: 选择菜单 1${gl_bai}"
-        fi
-    fi
-
-    break_end
 }
 
-# 卸载
-oai2_uninstall() {
-    clear
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}  卸载 OAI2${gl_bai}"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo ""
+ptm_release_config_lock() {
+    flock -u 233 2>/dev/null || true
+}
 
-    local status=$(oai2_check_status)
-    if [ "$status" = "not_installed" ]; then
-        echo -e "${gl_hong}❌ OAI2 未安装${gl_bai}"
-        break_end
+ptm_update_config() {
+    local jq_expression="$1"
+    local tmp_file="${PTM_CONFIG_FILE}.tmp"
+
+    ptm_acquire_config_lock || return 1
+
+    if jq "$jq_expression" "$PTM_CONFIG_FILE" > "$tmp_file" 2>/dev/null && [ -s "$tmp_file" ]; then
+        chmod 600 "$tmp_file"
+        mv "$tmp_file" "$PTM_CONFIG_FILE"
+        ptm_release_config_lock
+    else
+        rm -f "$tmp_file"
+        ptm_release_config_lock
+        echo -e "${gl_hong}配置更新失败，保留原配置${gl_bai}" >&2
+        return 1
+    fi
+}
+
+ptm_init_config() {
+    mkdir -p "$PTM_CONFIG_DIR" "$PTM_LOG_DIR"
+    if [ ! -f "$PTM_CONFIG_FILE" ]; then
+        cat > "$PTM_CONFIG_FILE" <<'PTMEOF'
+{
+  "ports": {},
+  "notify": {"enabled": false, "resend_api_key": "", "email_from": "", "email_from_name": "", "admin_email": ""}
+}
+PTMEOF
+        chmod 600 "$PTM_CONFIG_FILE"
+    fi
+    ptm_init_nftables
+}
+
+ptm_init_nftables() {
+    nft add table $PTM_TABLE_FAMILY $PTM_TABLE_NAME 2>/dev/null || true
+    nft add chain $PTM_TABLE_FAMILY $PTM_TABLE_NAME input { type filter hook input priority 0\; } 2>/dev/null || true
+    nft add chain $PTM_TABLE_FAMILY $PTM_TABLE_NAME output { type filter hook output priority 0\; } 2>/dev/null || true
+    nft add chain $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward { type filter hook forward priority 0\; } 2>/dev/null || true
+    # prerouting 优先级 -150：在 conntrack(-200) 之后、DNAT(-100) 之前拦截，兼容 Docker 端口映射场景
+    nft add chain $PTM_TABLE_FAMILY $PTM_TABLE_NAME prerouting { type filter hook prerouting priority -150\; } 2>/dev/null || true
+}
+
+ptm_get_default_interface() {
+    local iface
+    iface=$(ip route | grep default | awk '{print $5}' | head -n1)
+    if [ -n "$iface" ]; then
+        echo "$iface"
+        return
+    fi
+    ip link show | grep "state UP" | awk -F': ' '{print $2}' | cut -d'@' -f1 | grep -v '^lo$' | head -n1
+}
+
+ptm_format_bytes() {
+    local bytes=$1
+    [[ "$bytes" =~ ^[0-9]+$ ]] || bytes=0
+    if [ "$bytes" -ge 1073741824 ]; then
+        awk -v b="$bytes" 'BEGIN{printf "%.2fGB", b/1073741824}'
+    elif [ "$bytes" -ge 1048576 ]; then
+        awk -v b="$bytes" 'BEGIN{printf "%.2fMB", b/1048576}'
+    elif [ "$bytes" -ge 1024 ]; then
+        awk -v b="$bytes" 'BEGIN{printf "%.2fKB", b/1024}'
+    else
+        echo "${bytes}B"
+    fi
+}
+
+ptm_parse_size_to_bytes() {
+    local size_str=$1
+    local number unit
+    number=$(echo "$size_str" | grep -o '^[0-9]\+')
+    unit=$(echo "$size_str" | grep -o '[A-Za-z]\+$' | tr '[:lower:]' '[:upper:]')
+    [ -z "$number" ] && echo "0" && return 1
+    case $unit in
+        "MB"|"M") echo $((number * 1048576)) ;;
+        "GB"|"G") echo $((number * 1073741824)) ;;
+        "TB"|"T") echo $((number * 1099511627776)) ;;
+        *) echo "0" ;;
+    esac
+}
+
+# 校验配额格式，只接受 unlimited 或 数字+MB/GB/TB（大小写不敏感）
+# 格式不合法时 ptm_parse_size_to_bytes 会静默返回0，等价于"over 0 bytes"立即封锁，
+# 必须在入口拦截，否则用户手误输入会导致端口被意外瞬间封锁且无明显报错
+ptm_validate_quota() {
+    local input="$1"
+    [ "$input" = "unlimited" ] && return 0
+    local lower_input
+    lower_input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    [[ "$lower_input" =~ ^[0-9]+(mb|gb|tb)$ ]]
+}
+
+# 校验带宽格式，只接受 unlimited 或 数字+kbit/mbit/gbit（tc 原生单位，大小写不敏感）
+# 格式不合法会导致 ptm_parse_tc_rate_to_kbps 对非数字字符串做整数运算直接报错退出
+ptm_validate_rate() {
+    local input="$1"
+    [ "$input" = "unlimited" ] && return 0
+    local lower_input
+    lower_input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    [[ "$lower_input" =~ ^[0-9]+(kbit|mbit|gbit)$ ]]
+}
+
+# ---- 端口粒度（单端口 / 端口段 100-200 / 端口组 101,102,105） ----
+
+ptm_is_port_range() {
+    [[ "$1" =~ ^[0-9]+-[0-9]+$ ]]
+}
+
+ptm_is_port_group() {
+    [[ "$1" =~ , ]] && ! ptm_is_port_range "$1"
+}
+
+ptm_get_group_ports() {
+    local port_key=$1
+    if ptm_is_port_group "$port_key"; then
+        echo "$port_key" | tr ',' ' '
+    elif ptm_is_port_range "$port_key"; then
+        seq "${port_key%-*}" "${port_key#*-}" | tr '\n' ' '
+    else
+        echo "$port_key"
+    fi
+}
+
+# 统一的安全命名：逗号和连字符都替换为下划线（单端口不含这两种字符，原样返回）
+ptm_safe_name() {
+    echo "$1" | tr ',-' '__'
+}
+
+ptm_get_active_ports() {
+    [ -f "$PTM_CONFIG_FILE" ] || return 1
+    jq -r '.ports | keys[]' "$PTM_CONFIG_FILE" 2>/dev/null | sort -n
+}
+
+# ---- 计费核心 ----
+
+ptm_calculate_total_traffic() {
+    local input_bytes=$1 output_bytes=$2 billing_mode=${3:-"double"}
+    case $billing_mode in
+        "double")
+            # 双向统计：(入站 + 出站) × 2，适用于全程走公网的转发场景
+            echo $(( (input_bytes + output_bytes) * 2 ))
+            ;;
+        "premium")
+            # 内网中转：(入站 + 出站) × 1，中转段走内网不计费
+            echo $(( input_bytes + output_bytes ))
+            ;;
+        "single"|*)
+            # 仅出站统计：出站 × 2
+            echo $(( output_bytes * 2 ))
+            ;;
+    esac
+}
+
+ptm_get_port_traffic() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    local input_bytes output_bytes
+    input_bytes=$(nft list counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" 2>/dev/null | grep -o 'bytes [0-9]*' | awk '{print $2}')
+    output_bytes=$(nft list counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_out" 2>/dev/null | grep -o 'bytes [0-9]*' | awk '{print $2}')
+    echo "${input_bytes:-0} ${output_bytes:-0}"
+}
+
+ptm_get_port_monthly_usage() {
+    local port=$1
+    local traffic=($(ptm_get_port_traffic "$port"))
+    local billing_mode
+    billing_mode=$(jq -r ".ports.\"$port\".billing_mode // \"double\"" "$PTM_CONFIG_FILE")
+    ptm_calculate_total_traffic "${traffic[0]:-0}" "${traffic[1]:-0}" "$billing_mode"
+}
+
+# 返回: running / blocked_quota / blocked_expired / rate_limited:<rate> / quota_warning / expiring_soon:<days>
+ptm_get_port_running_status() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+
+    if nft list quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_block_quota" &>/dev/null; then
+        echo "blocked_expired"
+        return
+    fi
+
+    local quota_limit
+    quota_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+    if [ "$quota_limit" != "unlimited" ]; then
+        local quota_info
+        quota_info=$(nft list quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_quota" 2>/dev/null || true)
+        if [ -n "$quota_info" ]; then
+            local over_bytes used_bytes
+            over_bytes=$(echo "$quota_info" | grep -oE 'over [0-9]+ bytes' | grep -oE '[0-9]+' | head -n1)
+            used_bytes=$(echo "$quota_info" | grep -oE 'used [0-9]+ bytes' | grep -oE '[0-9]+' | head -n1)
+            if [ -n "$over_bytes" ] && [ -n "$used_bytes" ] && [ "$over_bytes" -gt 0 ]; then
+                if [ "$used_bytes" -ge "$over_bytes" ]; then
+                    echo "blocked_quota"
+                    return
+                fi
+                local warning_threshold=$((over_bytes * 80 / 100))
+                if [ "$used_bytes" -ge "$warning_threshold" ]; then
+                    echo "quota_warning"
+                    return
+                fi
+            fi
+        else
+            local current_usage limit_bytes
+            current_usage=$(ptm_get_port_monthly_usage "$port" 2>/dev/null || echo "0")
+            limit_bytes=$(ptm_parse_size_to_bytes "$quota_limit" 2>/dev/null || echo "0")
+            if [ "$limit_bytes" -gt 0 ] && [ "$current_usage" -ge "$limit_bytes" ]; then
+                echo "blocked_quota"
+                return
+            fi
+        fi
+    fi
+
+    local bandwidth_enabled
+    bandwidth_enabled=$(jq -r ".ports.\"$port\".bandwidth_limit.enabled // false" "$PTM_CONFIG_FILE")
+    if [ "$bandwidth_enabled" = "true" ]; then
+        local rate
+        rate=$(jq -r ".ports.\"$port\".bandwidth_limit.rate // \"unlimited\"" "$PTM_CONFIG_FILE")
+        [ "$rate" != "unlimited" ] && { echo "rate_limited:$rate"; return; }
+    fi
+
+    local expire_date
+    expire_date=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+    if [ -n "$expire_date" ] && [ "$expire_date" != "null" ]; then
+        local today expire_epoch today_epoch
+        today=$(ptm_beijing_time +%Y-%m-%d)
+        expire_epoch=$(date -d "$expire_date" +%s 2>/dev/null || echo "0")
+        today_epoch=$(date -d "$today" +%s 2>/dev/null || echo "0")
+        if [ "$expire_epoch" -gt 0 ] && [ "$today_epoch" -gt 0 ]; then
+            local diff_days=$(( (expire_epoch - today_epoch) / 86400 ))
+            if [ "$diff_days" -le 3 ] && [ "$diff_days" -ge 0 ]; then
+                echo "expiring_soon:$diff_days"
+                return
+            fi
+        fi
+    fi
+
+    echo "running"
+}
+
+ptm_format_running_status() {
+    case "$1" in
+        "running") echo "🟢正常" ;;
+        "blocked_expired") echo "🔴过期封锁" ;;
+        "blocked_quota") echo "🔴配额用尽" ;;
+        "quota_warning") echo "🟡即将用尽" ;;
+        rate_limited:*) echo "🟡限速${1#rate_limited:}" ;;
+        expiring_soon:*)
+            local days="${1#expiring_soon:}"
+            [ "$days" -eq 0 ] && echo "🟡今天到期" || echo "🟡${days}天到期"
+            ;;
+        *) echo "⚪未知" ;;
+    esac
+}
+
+# ---- nftables 流量计数规则 ----
+
+ptm_add_nftables_rules() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+
+    nft list counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" >/dev/null 2>&1 || \
+        nft add counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" 2>/dev/null || true
+    nft list counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_out" >/dev/null 2>&1 || \
+        nft add counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_out" 2>/dev/null || true
+
+    if ptm_is_port_group "$port"; then
+        local single_port
+        for single_port in $(ptm_get_group_ports "$port"); do
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input tcp dport $single_port counter name "port_${port_safe}_in" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input udp dport $single_port counter name "port_${port_safe}_in" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp dport $single_port counter name "port_${port_safe}_in" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp dport $single_port counter name "port_${port_safe}_in" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port counter name "port_${port_safe}_out" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port counter name "port_${port_safe}_out" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port counter name "port_${port_safe}_out" 2>/dev/null || true
+            nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port counter name "port_${port_safe}_out" 2>/dev/null || true
+        done
+    else
+        # 端口段用 nftables 原生 range 语法（如 8000-8100），单端口同理直接可用
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input tcp dport $port counter name "port_${port_safe}_in" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input udp dport $port counter name "port_${port_safe}_in" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp dport $port counter name "port_${port_safe}_in" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp dport $port counter name "port_${port_safe}_in" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $port counter name "port_${port_safe}_out" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $port counter name "port_${port_safe}_out" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $port counter name "port_${port_safe}_out" 2>/dev/null || true
+        nft add rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $port counter name "port_${port_safe}_out" 2>/dev/null || true
+    fi
+}
+
+ptm_remove_nftables_rules() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    local search_pattern="port_${port_safe}_"
+    local deleted_count=0
+
+    while true; do
+        local handle
+        handle=$(nft -a list table $PTM_TABLE_FAMILY $PTM_TABLE_NAME 2>/dev/null | \
+            grep -E "(tcp|udp).*(dport|sport).*$search_pattern" | head -n1 | sed -n 's/.*# handle \([0-9]\+\)$/\1/p')
+        [ -z "$handle" ] && break
+        local deleted=false
+        local chain
+        for chain in input output forward prerouting; do
+            if nft delete rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain handle $handle 2>/dev/null; then
+                deleted=true
+                deleted_count=$((deleted_count + 1))
+                break
+            fi
+        done
+        [ "$deleted" = false ] && break
+        [ "$deleted_count" -ge 200 ] && break
+    done
+
+    nft delete counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" 2>/dev/null || true
+    nft delete counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_out" 2>/dev/null || true
+}
+
+ptm_is_port_rules_exist() {
+    local port_safe
+    port_safe=$(ptm_safe_name "$1")
+    nft list counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" >/dev/null 2>&1
+}
+
+# ---- 配额（nftables quota 对象） ----
+
+ptm__apply_quota_rules_for_single_port() {
+    local single_port=$1 quota_name=$2 billing_mode=$3
+    if [ "$billing_mode" = "single" ]; then
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+    elif [ "$billing_mode" = "premium" ]; then
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+    else
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME input udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME output udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME forward udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+    fi
+}
+
+ptm_apply_quota() {
+    local port=$1 quota_limit=$2
+    local billing_mode
+    billing_mode=$(jq -r ".ports.\"$port\".billing_mode // \"double\"" "$PTM_CONFIG_FILE")
+    local quota_bytes
+    quota_bytes=$(ptm_parse_size_to_bytes "$quota_limit")
+
+    # 用当前已有流量作为配额初始 used 值，避免续费/重设配额后立即误触发
+    local traffic=($(ptm_get_port_traffic "$port"))
+    local current_total
+    current_total=$(ptm_calculate_total_traffic "${traffic[0]:-0}" "${traffic[1]:-0}" "$billing_mode")
+
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    local quota_name="port_${port_safe}_quota"
+
+    nft delete quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME $quota_name 2>/dev/null || true
+    nft add quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME $quota_name { over $quota_bytes bytes used $current_total bytes } 2>/dev/null || true
+
+    if ptm_is_port_group "$port"; then
+        local single_port
+        for single_port in $(ptm_get_group_ports "$port"); do
+            ptm__apply_quota_rules_for_single_port "$single_port" "$quota_name" "$billing_mode"
+        done
+    else
+        ptm__apply_quota_rules_for_single_port "$port" "$quota_name" "$billing_mode"
+    fi
+
+    if ! nft list quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "$quota_name" >/dev/null 2>&1; then
+        echo -e "${gl_hong}⚠ 配额对象未生效: $quota_name${gl_bai}" >&2
+    fi
+}
+
+ptm_remove_quota() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    local quota_name="port_${port_safe}_quota"
+    local deleted_count=0
+    while true; do
+        local handle
+        handle=$(nft -a list table $PTM_TABLE_FAMILY $PTM_TABLE_NAME 2>/dev/null | grep "quota name \"$quota_name\"" | head -n1 | sed -n 's/.*# handle \([0-9]\+\)$/\1/p')
+        [ -z "$handle" ] && break
+        local deleted=false
+        local chain
+        for chain in input output forward; do
+            if nft delete rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain handle $handle 2>/dev/null; then
+                deleted=true
+                deleted_count=$((deleted_count + 1))
+                break
+            fi
+        done
+        [ "$deleted" = false ] && break
+        [ "$deleted_count" -ge 100 ] && break
+    done
+    nft delete quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "$quota_name" 2>/dev/null || true
+}
+
+# ---- 到期封锁（复用 quota over 0 bytes 机制，第一个包即触发 drop） ----
+
+ptm_block_port() {
+    local port=$1
+    ptm_init_nftables
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    ptm_remove_nftables_rules "$port"
+
+    local quota_name="port_${port_safe}_block_quota"
+    nft delete quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME $quota_name 2>/dev/null || true
+    nft add quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME $quota_name { over 0 bytes\; } 2>/dev/null || \
+        nft add quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME $quota_name { over 0 bytes } 2>/dev/null || true
+
+    local ports_to_block
+    if ptm_is_port_group "$port"; then
+        ports_to_block=$(ptm_get_group_ports "$port")
+    else
+        ports_to_block="$port"
+    fi
+    local single_port chain
+    for single_port in $ports_to_block; do
+        for chain in input forward prerouting; do
+            nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain tcp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+            nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain udp dport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        done
+        for chain in output forward; do
+            nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain tcp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+            nft insert rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain udp sport $single_port quota name "$quota_name" drop 2>/dev/null || true
+        done
+    done
+}
+
+ptm_unblock_port() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    local quota_name="port_${port_safe}_block_quota"
+    local deleted_count=0
+    while true; do
+        local handle
+        handle=$(nft -a list table $PTM_TABLE_FAMILY $PTM_TABLE_NAME 2>/dev/null | grep "quota name \"$quota_name\"" | head -n1 | sed -n 's/.*# handle \([0-9]\+\)$/\1/p')
+        [ -z "$handle" ] && break
+        local deleted=false
+        local chain
+        for chain in input output forward prerouting; do
+            if nft delete rule $PTM_TABLE_FAMILY $PTM_TABLE_NAME $chain handle $handle 2>/dev/null; then
+                deleted=true
+                deleted_count=$((deleted_count + 1))
+                break
+            fi
+        done
+        [ "$deleted" = false ] && break
+        [ "$deleted_count" -ge 100 ] && break
+    done
+    nft delete quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "$quota_name" 2>/dev/null || true
+    ptm_add_nftables_rules "$port"
+    local monthly_limit
+    monthly_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+    [ "$monthly_limit" != "unlimited" ] && ptm_apply_quota "$port" "$monthly_limit"
+}
+
+# ---- tc 带宽限速 ----
+
+ptm_generate_mark() {
+    local hash
+    hash=$(echo -n "$(ptm_safe_name "$1")" | cksum | cut -d' ' -f1)
+    echo $(( hash % 65000 + 1000 ))
+}
+
+ptm_generate_tc_class_id() {
+    local port=$1
+    if ptm_is_port_group "$port" || ptm_is_port_range "$port"; then
+        local mark_id
+        mark_id=$(ptm_generate_mark "$port")
+        echo "1:$(printf '%x' $((0x2000 + (mark_id % 4096))))"
+    else
+        echo "1:$(printf '%x' $((0x1000 + port)))"
+    fi
+}
+
+ptm_calculate_tc_burst() {
+    local base_rate=$1
+    local rate_bytes_per_sec=$((base_rate * 1000 / 8))
+    local burst_by_formula=$((rate_bytes_per_sec / 20))
+    local min_burst=$((2 * 1500))
+    [ "$burst_by_formula" -gt "$min_burst" ] && echo "$burst_by_formula" || echo "$min_burst"
+}
+
+ptm_format_tc_burst() {
+    local burst_bytes=$1
+    if [ "$burst_bytes" -lt 1024 ]; then
+        echo "${burst_bytes}"
+    elif [ "$burst_bytes" -lt 1048576 ]; then
+        echo "$((burst_bytes / 1024))k"
+    else
+        echo "$((burst_bytes / 1048576))m"
+    fi
+}
+
+ptm_parse_tc_rate_to_kbps() {
+    local total_limit=$1
+    if [[ "$total_limit" =~ gbit$ ]]; then
+        echo $(( ${total_limit%gbit} * 1000000 ))
+    elif [[ "$total_limit" =~ mbit$ ]]; then
+        echo $(( ${total_limit%mbit} * 1000 ))
+    else
+        echo "${total_limit%kbit}"
+    fi
+}
+
+ptm_apply_tc_limit() {
+    local port=$1 total_limit=$2
+    local interface
+    interface=$(ptm_get_default_interface)
+
+    tc qdisc add dev "$interface" root handle 1: htb default 30 2>/dev/null || true
+    tc class add dev "$interface" parent 1: classid 1:1 htb rate 1000mbit 2>/dev/null || true
+
+    local class_id
+    class_id=$(ptm_generate_tc_class_id "$port")
+    tc class del dev "$interface" classid "$class_id" 2>/dev/null || true
+
+    local base_rate burst_bytes burst_size
+    base_rate=$(ptm_parse_tc_rate_to_kbps "$total_limit")
+    burst_bytes=$(ptm_calculate_tc_burst "$base_rate")
+    burst_size=$(ptm_format_tc_burst "$burst_bytes")
+
+    if ! tc class add dev "$interface" parent 1:1 classid "$class_id" htb rate "$total_limit" ceil "$total_limit" burst "$burst_size" 2>/dev/null; then
+        echo -e "${gl_hong}设置带宽限制失败，请检查网络设备${gl_bai}" >&2
         return 1
     fi
 
-    echo -e "${gl_hong}⚠️ 此操作将停止服务并删除程序文件${gl_bai}"
-    echo ""
-    read -e -p "是否同时删除配置和数据？(y/n) [n]: " delete_data
-    echo ""
-    read -e -p "确认卸载？(y/n) [n]: " confirm
+    if ptm_is_port_group "$port" || ptm_is_port_range "$port"; then
+        local mark_id
+        mark_id=$(ptm_generate_mark "$port")
+        tc filter add dev "$interface" protocol ip parent 1:0 prio 1 handle "$mark_id" fw flowid "$class_id" 2>/dev/null || true
+    else
+        local filter_prio=$((port % 1000 + 1))
+        tc filter add dev "$interface" protocol ip parent 1:0 prio "$filter_prio" u32 \
+            match ip protocol 6 0xff match ip sport "$port" 0xffff flowid "$class_id" 2>/dev/null || true
+        tc filter add dev "$interface" protocol ip parent 1:0 prio "$filter_prio" u32 \
+            match ip protocol 6 0xff match ip dport "$port" 0xffff flowid "$class_id" 2>/dev/null || true
+        tc filter add dev "$interface" protocol ip parent 1:0 prio $((filter_prio + 1000)) u32 \
+            match ip protocol 17 0xff match ip sport "$port" 0xffff flowid "$class_id" 2>/dev/null || true
+        tc filter add dev "$interface" protocol ip parent 1:0 prio $((filter_prio + 1000)) u32 \
+            match ip protocol 17 0xff match ip dport "$port" 0xffff flowid "$class_id" 2>/dev/null || true
+    fi
+}
 
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "取消卸载"
-        break_end
+ptm_remove_tc_limit() {
+    local port=$1
+    local interface class_id
+    interface=$(ptm_get_default_interface)
+    class_id=$(ptm_generate_tc_class_id "$port")
+    tc filter del dev "$interface" 2>/dev/null || true
+    tc class del dev "$interface" classid "$class_id" 2>/dev/null || true
+}
+
+# ---- 到期日 / 计费周期计算 ----
+
+ptm_calculate_next_expiration() {
+    local base_date="$1" months="$2" target_day="$3"
+    local base_year base_month
+    base_year=$(date -d "$base_date" +%Y 2>/dev/null)
+    base_month=$(date -d "$base_date" +%m 2>/dev/null)
+    base_month=$((10#$base_month))
+    local total_months=$((base_month + months))
+    local year_add=$(( (total_months - 1) / 12 ))
+    local next_month=$(( (total_months - 1) % 12 + 1 ))
+    local next_year=$((base_year + year_add))
+    printf -v next_month "%02d" "$next_month"
+    printf -v target_day "%02d" "$target_day"
+    local candidate_date="${next_year}-${next_month}-${target_day}"
+    if date -d "$candidate_date" >/dev/null 2>&1; then
+        echo "$candidate_date"
+    else
+        date -d "${next_year}-${next_month}-01 + 1 month - 1 day" +%Y-%m-%d 2>/dev/null
+    fi
+}
+
+# 计算当前计费周期的起始日期（YYYY-MM-DD），reset_day 超过当月天数时收敛到月末，
+# 避免生成 2月31日 这类非法日期；据此判断是否需要重置可自动补偿关机/cron漏跑错过的重置。
+ptm_get_billing_cycle_start() {
+    local reset_day=${1:-1}
+    local today_day year month
+    today_day=$(ptm_beijing_time +%d | sed 's/^0//')
+    year=$(ptm_beijing_time +%Y)
+    month=$(ptm_beijing_time +%m)
+
+    local cur_last
+    cur_last=$(date -d "$year-$month-01 +1 month -1 day" +%-d 2>/dev/null || echo 28)
+    [[ "$cur_last" =~ ^[0-9]+$ ]] || cur_last=28
+    local cur_effective=$reset_day
+    [ "$reset_day" -gt "$cur_last" ] && cur_effective=$cur_last
+
+    if [ "$today_day" -ge "$cur_effective" ]; then
+        printf "%s-%s-%02d" "$year" "$month" "$cur_effective"
+    else
+        if [ "$month" = "01" ]; then
+            month="12"; year=$((year - 1))
+        else
+            month=$(printf "%02d" $((10#$month - 1)))
+        fi
+        local prev_last
+        prev_last=$(date -d "$year-$month-01 +1 month -1 day" +%-d 2>/dev/null || echo 28)
+        [[ "$prev_last" =~ ^[0-9]+$ ]] || prev_last=28
+        local prev_effective=$reset_day
+        [ "$reset_day" -gt "$prev_last" ] && prev_effective=$prev_last
+        printf "%s-%s-%02d" "$year" "$month" "$prev_effective"
+    fi
+}
+
+ptm_record_reset_history() {
+    local port=$1 traffic_bytes=$2
+    local timestamp
+    timestamp=$(ptm_beijing_time +%s)
+    echo "${timestamp}|${port}|${traffic_bytes}" >> "$PTM_RESET_HISTORY_LOG"
+    if [ -f "$PTM_RESET_HISTORY_LOG" ] && [ "$(wc -l < "$PTM_RESET_HISTORY_LOG")" -gt 100 ]; then
+        tail -n 100 "$PTM_RESET_HISTORY_LOG" > "${PTM_RESET_HISTORY_LOG}.tmp"
+        mv "${PTM_RESET_HISTORY_LOG}.tmp" "$PTM_RESET_HISTORY_LOG"
+    fi
+}
+
+ptm_reset_port_counters() {
+    local port=$1
+    local port_safe
+    port_safe=$(ptm_safe_name "$port")
+    nft reset counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_in" >/dev/null 2>&1 || true
+    nft reset counter $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_out" >/dev/null 2>&1 || true
+    nft reset quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_quota" >/dev/null 2>&1 || true
+}
+
+ptm_auto_reset_port() {
+    local port="$1"
+    local traffic=($(ptm_get_port_traffic "$port"))
+    local billing_mode total_bytes
+    billing_mode=$(jq -r ".ports.\"$port\".billing_mode // \"double\"" "$PTM_CONFIG_FILE")
+    total_bytes=$(ptm_calculate_total_traffic "${traffic[0]:-0}" "${traffic[1]:-0}" "$billing_mode")
+    ptm_reset_port_counters "$port"
+    ptm_record_reset_history "$port" "$total_bytes"
+    ptm_log_notification "端口 $port 自动重置完成，重置前流量: $(ptm_format_bytes "$total_bytes")"
+}
+
+# 按计费周期批量重置到期端口，可补偿关机/cron漏跑导致的错过重置
+ptm_reset_all_due_ports() {
+    local port reset_count=0
+    for port in $(ptm_get_active_ports); do
+        local reset_day_raw
+        reset_day_raw=$(jq -r ".ports.\"$port\".quota.reset_day" "$PTM_CONFIG_FILE" 2>/dev/null)
+        [ "$reset_day_raw" = "null" ] || [ -z "$reset_day_raw" ] && continue
+
+        local current_cycle last_cycle
+        current_cycle=$(ptm_get_billing_cycle_start "$reset_day_raw")
+        last_cycle=$(jq -r ".ports.\"$port\".quota.last_reset_cycle // \"\"" "$PTM_CONFIG_FILE" 2>/dev/null)
+
+        if [ -z "$last_cycle" ] || [ "$last_cycle" = "null" ]; then
+            ptm_update_config ".ports.\"$port\".quota.last_reset_cycle = \"$current_cycle\"" || true
+            continue
+        fi
+
+        if [ "$last_cycle" != "$current_cycle" ]; then
+            if ptm_auto_reset_port "$port"; then
+                ptm_update_config ".ports.\"$port\".quota.last_reset_cycle = \"$current_cycle\"" || true
+                reset_count=$((reset_count + 1))
+            fi
+        fi
+    done
+    [ "$reset_count" -gt 0 ] && ptm_log_notification "[批量重置] 本次成功重置 $reset_count 个端口"
+}
+
+# ---- 邮件通知 (Resend API) ----
+
+ptm_send_email() {
+    local title="$1" html_content="$2" target_email="$3"
+    local api_key email_from email_from_name
+    api_key=$(jq -r '.notify.resend_api_key // ""' "$PTM_CONFIG_FILE" 2>/dev/null)
+    email_from=$(jq -r '.notify.email_from // ""' "$PTM_CONFIG_FILE" 2>/dev/null)
+    email_from_name=$(jq -r '.notify.email_from_name // ""' "$PTM_CONFIG_FILE" 2>/dev/null)
+
+    if [ -z "$api_key" ] || [ -z "$email_from" ] || [ -z "$target_email" ]; then
+        return 1
+    fi
+
+    local from_address="$email_from"
+    [ -n "$email_from_name" ] && [ "$email_from_name" != "null" ] && from_address="${email_from_name} <${email_from}>"
+
+    local json_body
+    json_body=$(jq -n --arg from "$from_address" --arg to "$target_email" --arg subject "$title" \
+        --arg html "$html_content" --arg text "请使用支持HTML的邮箱客户端查看此邮件。" \
+        '{from: $from, to: $to, subject: $subject, html: $html, text: $text}')
+
+    local retry=0
+    while [ "$retry" -le "$PTM_EMAIL_MAX_RETRIES" ]; do
+        local response
+        response=$(curl -s --connect-timeout "$PTM_EMAIL_CONNECT_TIMEOUT" --max-time "$PTM_EMAIL_MAX_TIMEOUT" \
+            -X POST "https://api.resend.com/emails" \
+            -H "Authorization: Bearer ${api_key}" -H "Content-Type: application/json" \
+            -d "$json_body" 2>/dev/null)
+        if echo "$response" | grep -q '"id"'; then
+            ptm_log_notification "[邮件通知] 发送成功: $title"
+            return 0
+        fi
+        retry=$((retry + 1))
+        [ "$retry" -le "$PTM_EMAIL_MAX_RETRIES" ] && sleep 2
+    done
+    ptm_log_notification "[邮件通知] 发送失败: $title"
+    return 1
+}
+
+# ---- 每日检查：到期预警/停机/超期清理 + 配额80%/100%预警 ----
+
+ptm_check_all_expiration() {
+    local today today_epoch admin_email
+    today=$(ptm_beijing_time +%Y-%m-%d)
+    today_epoch=$(date -d "$today" +%s 2>/dev/null || echo "0")
+    admin_email=$(jq -r '.notify.admin_email // ""' "$PTM_CONFIG_FILE" 2>/dev/null)
+    local ports_to_cleanup=()
+
+    local port
+    for port in $(ptm_get_active_ports); do
+        local expire_date
+        expire_date=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+        [ -z "$expire_date" ] || [ "$expire_date" = "null" ] && continue
+
+        local user_email expire_epoch
+        user_email=$(jq -r ".ports.\"$port\".email // \"\"" "$PTM_CONFIG_FILE")
+        expire_epoch=$(date -d "$expire_date" +%s 2>/dev/null || echo "0")
+        [ "$expire_epoch" -eq 0 ] && continue
+
+        # 到期前3天预警窗口，每个到期周期只发一次
+        local warning_epoch=$((expire_epoch - 3 * 86400))
+        if [ "$today_epoch" -ge "$warning_epoch" ] && [ "$today_epoch" -lt "$expire_epoch" ]; then
+            local last_warning_target
+            last_warning_target=$(jq -r ".ports.\"$port\".last_warning_target_date // \"\"" "$PTM_CONFIG_FILE")
+            if [ "$last_warning_target" != "$expire_date" ]; then
+                if [ -n "$user_email" ] && [ "$user_email" != "null" ]; then
+                    if ptm_send_email "【租期提醒】端口 $port 即将到期" \
+                        "<h1>⚠️ 续费提醒</h1><p>您租用的端口 <strong>$port</strong> 即将到期 (<strong>$expire_date</strong>)，请及时续费。</p>" \
+                        "$user_email"; then
+                        ptm_update_config ".ports.\"$port\".last_warning_target_date = \"$expire_date\""
+                    fi
+                fi
+                [ -n "$admin_email" ] && [ "$admin_email" != "null" ] && ptm_send_email "[租期预警] 端口 $port 即将到期" \
+                    "<p>端口 $port 到期日: $expire_date</p>" "$admin_email"
+            fi
+        fi
+
+        if [ "$today_epoch" -gt "$expire_epoch" ]; then
+            local days_expired=$(( (today_epoch - expire_epoch) / 86400 ))
+            if [ "$days_expired" -ge 3 ]; then
+                ports_to_cleanup+=("$port")
+                continue
+            fi
+            if ptm_is_port_rules_exist "$port"; then
+                ptm_log_notification "[租期管理] 端口 $port 已到期 ($expire_date)，执行停机"
+                [ -n "$user_email" ] && [ "$user_email" != "null" ] && ptm_send_email "【服务暂停】端口 $port 已到期停机" \
+                    "<p>您租用的端口 $port 已到期 ($expire_date)，服务已暂停，请联系管理员续费。</p>" "$user_email"
+                [ -n "$admin_email" ] && [ "$admin_email" != "null" ] && ptm_send_email "[到期封锁] 端口 $port 已停机" \
+                    "<p>端口 $port 到期日 $expire_date 已停机</p>" "$admin_email"
+            fi
+            ptm_block_port "$port"
+            ptm_remove_tc_limit "$port"
+        fi
+    done
+
+    for port in "${ports_to_cleanup[@]}"; do
+        ptm_cleanup_expired_port "$port"
+    done
+}
+
+ptm_check_all_quota() {
+    local admin_email
+    admin_email=$(jq -r '.notify.admin_email // ""' "$PTM_CONFIG_FILE" 2>/dev/null)
+    local port
+    for port in $(ptm_get_active_ports); do
+        local quota_enabled monthly_limit
+        quota_enabled=$(jq -r ".ports.\"$port\".quota.enabled // true" "$PTM_CONFIG_FILE")
+        monthly_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+        [ "$quota_enabled" != "true" ] || [ "$monthly_limit" = "unlimited" ] && continue
+
+        local user_email
+        user_email=$(jq -r ".ports.\"$port\".email // \"\"" "$PTM_CONFIG_FILE")
+        [ -z "$user_email" ] || [ "$user_email" = "null" ] && continue
+
+        local current_usage limit_bytes
+        current_usage=$(ptm_get_port_monthly_usage "$port" 2>/dev/null || echo "0")
+        limit_bytes=$(ptm_parse_size_to_bytes "$monthly_limit" 2>/dev/null || echo "0")
+        [ "$limit_bytes" -le 0 ] && continue
+
+        local usage_percent=$((current_usage * 100 / limit_bytes))
+        local reset_day cycle_start
+        reset_day=$(jq -r ".ports.\"$port\".quota.reset_day // 1" "$PTM_CONFIG_FILE")
+        cycle_start=$(ptm_get_billing_cycle_start "$reset_day")
+
+        # 用百分比（95%）而非固定字节数做"已用尽"阈值，避免小额配额端口被误判
+        local block_threshold=$((limit_bytes * 95 / 100))
+        if [ "$current_usage" -ge "$block_threshold" ]; then
+            local last_block_cycle
+            last_block_cycle=$(jq -r ".ports.\"$port\".last_quota_block_notify_cycle // \"\"" "$PTM_CONFIG_FILE")
+            if [ "$last_block_cycle" != "$cycle_start" ]; then
+                if ptm_send_email "【流量超限】端口 $port 已被暂停" \
+                    "<p>端口 $port 本月流量配额已用完 (${usage_percent}%)，已被暂停服务。</p>" "$user_email"; then
+                    ptm_update_config ".ports.\"$port\".last_quota_block_notify_cycle = \"$cycle_start\""
+                fi
+            fi
+        elif [ "$usage_percent" -ge 80 ]; then
+            local last_warn_cycle
+            last_warn_cycle=$(jq -r ".ports.\"$port\".last_quota_warning_cycle // \"\"" "$PTM_CONFIG_FILE")
+            if [ "$last_warn_cycle" != "$cycle_start" ]; then
+                if ptm_send_email "【流量预警】端口 $port 配额即将用完" \
+                    "<p>端口 $port 本月流量配额已使用 ${usage_percent}%。</p>" "$user_email"; then
+                    ptm_update_config ".ports.\"$port\".last_quota_warning_cycle = \"$cycle_start\""
+                fi
+            fi
+        fi
+    done
+}
+
+ptm_cleanup_expired_port() {
+    local port=$1
+    local user_email admin_email remark expire_date
+    user_email=$(jq -r ".ports.\"$port\".email // \"\"" "$PTM_CONFIG_FILE")
+    admin_email=$(jq -r '.notify.admin_email // ""' "$PTM_CONFIG_FILE")
+    remark=$(jq -r ".ports.\"$port\".remark // \"$port\"" "$PTM_CONFIG_FILE")
+    expire_date=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+
+    local port_backup
+    port_backup=$(jq ".ports.\"$port\"" "$PTM_CONFIG_FILE" 2>/dev/null)
+    ptm_log_notification "[自动清理-备份] 端口 $port 清理前配置快照: $port_backup"
+    ptm_log_notification "[自动清理] 端口 $port ($remark) 过期超3天，开始自动清理"
+
+    ptm_remove_nftables_rules "$port"
+    ptm_remove_quota "$port"
+    ptm_remove_tc_limit "$port"
+
+    if command -v conntrack >/dev/null 2>&1; then
+        local p
+        for p in $(ptm_get_group_ports "$port"); do
+            conntrack -D -p tcp --dport "$p" 2>/dev/null || true
+            conntrack -D -p udp --dport "$p" 2>/dev/null || true
+        done
+    fi
+
+    ptm_update_config "del(.ports.\"$port\")"
+
+    if [ -f "$PTM_RESET_HISTORY_LOG" ]; then
+        grep -v "|${port}|" "$PTM_RESET_HISTORY_LOG" > "${PTM_RESET_HISTORY_LOG}.tmp" 2>/dev/null || true
+        mv "${PTM_RESET_HISTORY_LOG}.tmp" "$PTM_RESET_HISTORY_LOG" 2>/dev/null || true
+    fi
+
+    [ -n "$admin_email" ] && [ "$admin_email" != "null" ] && ptm_send_email "[自动清理] 端口 $port ($remark) 已回收" \
+        "<p>端口 $port ($remark) 到期日 $expire_date，已自动清理监控。</p>" "$admin_email"
+
+    ptm_log_notification "[自动清理] 端口 $port ($remark) 清理完成"
+}
+
+# 重启/进程恢复后重建规则：已过期的端口重新封锁而非放行，避免出现免费可用窗口
+ptm_restore_monitoring_if_needed() {
+    local port
+    for port in $(ptm_get_active_ports); do
+        local expire_date today_epoch expire_epoch
+        expire_date=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+        if [ -n "$expire_date" ] && [ "$expire_date" != "null" ]; then
+            today_epoch=$(date -d "$(ptm_beijing_time +%Y-%m-%d)" +%s 2>/dev/null || echo "0")
+            expire_epoch=$(date -d "$expire_date" +%s 2>/dev/null || echo "0")
+            if [ "$expire_epoch" -gt 0 ] && [ "$today_epoch" -gt "$expire_epoch" ]; then
+                ptm_block_port "$port"
+                continue
+            fi
+        fi
+        if ! ptm_is_port_rules_exist "$port"; then
+            ptm_add_nftables_rules "$port"
+            local monthly_limit
+            monthly_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+            [ "$monthly_limit" != "unlimited" ] && ptm_apply_quota "$port" "$monthly_limit"
+            local rate_enabled
+            rate_enabled=$(jq -r ".ports.\"$port\".bandwidth_limit.enabled // false" "$PTM_CONFIG_FILE")
+            if [ "$rate_enabled" = "true" ]; then
+                local rate
+                rate=$(jq -r ".ports.\"$port\".bandwidth_limit.rate // \"\"" "$PTM_CONFIG_FILE")
+                [ -n "$rate" ] && ptm_apply_tc_limit "$port" "$rate"
+            fi
+        fi
+    done
+}
+
+# ---- cron 自动化：生成独立脚本(不反向依赖 net-tcp-tune.sh)，模式与 snell_install_daily_restart_cron 一致 ----
+
+ptm_install_cron() {
+    if ! command -v crontab >/dev/null 2>&1; then
+        echo -e "${gl_huang}⚠ 未安装 crontab，跳过每日自动检查/重置的定时任务${gl_bai}"
         return 0
     fi
 
-    echo ""
-    echo "正在卸载..."
+    cat > "$PTM_DAILY_SCRIPT" <<PTMDAILYEOF
+#!/bin/bash
+# ptm 每日到期/配额检查 wrapper（由 net-tcp-tune 自动生成，请勿手动修改）
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CONFIG_FILE="${PTM_CONFIG_FILE}"
+TABLE_NAME="${PTM_TABLE_NAME}"
+FAMILY="${PTM_TABLE_FAMILY}"
+LOG_FILE="${PTM_NOTIFICATION_LOG}"
+LOCK_FILE="/tmp/net-tcp-tune-ptm-daily.lock"
 
-    # 停止并删除服务
-    systemctl stop "$OAI2_SERVICE_NAME" 2>/dev/null
-    systemctl disable "$OAI2_SERVICE_NAME" 2>/dev/null
-    rm -f "/etc/systemd/system/${OAI2_SERVICE_NAME}.service"
-    systemctl daemon-reload
+log() { mkdir -p "\$(dirname "\$LOG_FILE")"; echo "[\$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')] \$1" >> "\$LOG_FILE"; }
 
-    if [ "$delete_data" = "y" ] || [ "$delete_data" = "Y" ]; then
-        rm -rf "$OAI2_INSTALL_DIR"
-        echo -e "${gl_lv}✅ 服务、程序和数据已全部删除${gl_bai}"
+send_email() {
+    local title="\$1" html="\$2" to="\$3"
+    local key from
+    key=\$(jq -r '.notify.resend_api_key // ""' "\$CONFIG_FILE" 2>/dev/null)
+    from=\$(jq -r '.notify.email_from // ""' "\$CONFIG_FILE" 2>/dev/null)
+    [ -z "\$key" ] || [ -z "\$from" ] || [ -z "\$to" ] && return 1
+    local body
+    body=\$(jq -n --arg f "\$from" --arg t "\$to" --arg s "\$title" --arg h "\$html" '{from:\$f,to:\$t,subject:\$s,html:\$h}')
+    curl -s --max-time 20 -X POST "https://api.resend.com/emails" -H "Authorization: Bearer \$key" -H "Content-Type: application/json" -d "\$body" | grep -q '"id"'
+}
+
+check_all() {
+    [ -f "\$CONFIG_FILE" ] || return 0
+    local today today_epoch admin
+    today=\$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+    today_epoch=\$(date -d "\$today" +%s 2>/dev/null || echo 0)
+    admin=\$(jq -r '.notify.admin_email // ""' "\$CONFIG_FILE" 2>/dev/null)
+    for port in \$(jq -r '.ports | keys[]' "\$CONFIG_FILE" 2>/dev/null); do
+        local expire user_email expire_epoch
+        expire=\$(jq -r ".ports.\\"\$port\\".expiration_date // \\"\\"" "\$CONFIG_FILE")
+        if [ -n "\$expire" ] && [ "\$expire" != "null" ]; then
+            user_email=\$(jq -r ".ports.\\"\$port\\".email // \\"\\"" "\$CONFIG_FILE")
+            expire_epoch=\$(date -d "\$expire" +%s 2>/dev/null || echo 0)
+            if [ "\$expire_epoch" -gt 0 ] && [ "\$today_epoch" -gt "\$expire_epoch" ]; then
+                local days=\$(( (today_epoch - expire_epoch) / 86400 ))
+                if [ "\$days" -ge 3 ]; then
+                    log "[自动清理] 端口 \$port 过期超3天，跳过（请通过 vps-tcp-tune 菜单33手动清理确认）"
+                    continue
+                fi
+                log "[租期管理] 端口 \$port 已到期 (\$expire)，执行停机"
+                [ -n "\$user_email" ] && [ "\$user_email" != "null" ] && send_email "【服务暂停】端口 \$port 已到期停机" "<p>端口 \$port 已到期停机</p>" "\$user_email"
+                [ -n "\$admin" ] && [ "\$admin" != "null" ] && send_email "[到期封锁] 端口 \$port" "<p>端口 \$port 到期日 \$expire 已停机</p>" "\$admin"
+                nft delete quota \$FAMILY \$TABLE_NAME "port_\$(echo "\$port" | tr ',-' '__')_block_quota" 2>/dev/null || true
+                nft add quota \$FAMILY \$TABLE_NAME "port_\$(echo "\$port" | tr ',-' '__')_block_quota" { over 0 bytes\; } 2>/dev/null || true
+                local psafe=\$(echo "\$port" | tr ',-' '__')
+                nft insert rule \$FAMILY \$TABLE_NAME input tcp dport \$port quota name "port_\${psafe}_block_quota" drop 2>/dev/null || true
+                nft insert rule \$FAMILY \$TABLE_NAME input udp dport \$port quota name "port_\${psafe}_block_quota" drop 2>/dev/null || true
+                nft insert rule \$FAMILY \$TABLE_NAME output tcp sport \$port quota name "port_\${psafe}_block_quota" drop 2>/dev/null || true
+                nft insert rule \$FAMILY \$TABLE_NAME output udp sport \$port quota name "port_\${psafe}_block_quota" drop 2>/dev/null || true
+            fi
+        fi
+    done
+}
+
+if command -v flock >/dev/null 2>&1; then
+    ( flock -n 9 || exit 0; check_all ) 9>"\$LOCK_FILE"
+else
+    check_all
+fi
+PTMDAILYEOF
+    chmod +x "$PTM_DAILY_SCRIPT"
+
+    cat > "$PTM_RESET_SCRIPT" <<PTMRESETEOF
+#!/bin/bash
+# ptm 每日计费周期重置 wrapper（由 net-tcp-tune 自动生成，请勿手动修改）
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CONFIG_FILE="${PTM_CONFIG_FILE}"
+TABLE_NAME="${PTM_TABLE_NAME}"
+FAMILY="${PTM_TABLE_FAMILY}"
+LOG_FILE="${PTM_NOTIFICATION_LOG}"
+LOCK_FILE="/tmp/net-tcp-tune-ptm-reset.lock"
+
+log() { mkdir -p "\$(dirname "\$LOG_FILE")"; echo "[\$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')] \$1" >> "\$LOG_FILE"; }
+
+cycle_start() {
+    local reset_day=\$1
+    local today_day year month cur_last cur_eff
+    today_day=\$(TZ='Asia/Shanghai' date +%d | sed 's/^0//')
+    year=\$(TZ='Asia/Shanghai' date +%Y)
+    month=\$(TZ='Asia/Shanghai' date +%m)
+    cur_last=\$(date -d "\$year-\$month-01 +1 month -1 day" +%-d 2>/dev/null || echo 28)
+    cur_eff=\$reset_day
+    [ "\$reset_day" -gt "\$cur_last" ] && cur_eff=\$cur_last
+    if [ "\$today_day" -ge "\$cur_eff" ]; then
+        printf "%s-%s-%02d" "\$year" "\$month" "\$cur_eff"
     else
-        # 只删除二进制文件，保留配置
-        rm -f "$OAI2_INSTALL_DIR/$OAI2_BINARY_NAME"
-        rm -f "$OAI2_INSTALL_DIR/dan-web-windows-amd64.exe" 2>/dev/null
-        echo -e "${gl_lv}✅ 服务已删除，配置保留在 $OAI2_INSTALL_DIR/config/${gl_bai}"
+        if [ "\$month" = "01" ]; then month="12"; year=\$((year - 1)); else month=\$(printf "%02d" \$((10#\$month - 1))); fi
+        local prev_last=\$(date -d "\$year-\$month-01 +1 month -1 day" +%-d 2>/dev/null || echo 28)
+        local prev_eff=\$reset_day
+        [ "\$reset_day" -gt "\$prev_last" ] && prev_eff=\$prev_last
+        printf "%s-%s-%02d" "\$year" "\$month" "\$prev_eff"
+    fi
+}
+
+reset_all() {
+    [ -f "\$CONFIG_FILE" ] || return 0
+    local tmp="\${CONFIG_FILE}.tmp"
+    for port in \$(jq -r '.ports | keys[]' "\$CONFIG_FILE" 2>/dev/null); do
+        local reset_day
+        reset_day=\$(jq -r ".ports.\\"\$port\\".quota.reset_day" "\$CONFIG_FILE" 2>/dev/null)
+        [ "\$reset_day" = "null" ] || [ -z "\$reset_day" ] && continue
+        local cur last
+        cur=\$(cycle_start "\$reset_day")
+        last=\$(jq -r ".ports.\\"\$port\\".quota.last_reset_cycle // \\"\\"" "\$CONFIG_FILE" 2>/dev/null)
+        if [ -z "\$last" ] || [ "\$last" = "null" ]; then
+            jq ".ports.\\"\$port\\".quota.last_reset_cycle = \\"\$cur\\"" "\$CONFIG_FILE" > "\$tmp" && mv "\$tmp" "\$CONFIG_FILE"
+            continue
+        fi
+        if [ "\$last" != "\$cur" ]; then
+            local psafe=\$(echo "\$port" | tr ',-' '__')
+            nft reset counter \$FAMILY \$TABLE_NAME "port_\${psafe}_in" >/dev/null 2>&1 || true
+            nft reset counter \$FAMILY \$TABLE_NAME "port_\${psafe}_out" >/dev/null 2>&1 || true
+            nft reset quota \$FAMILY \$TABLE_NAME "port_\${psafe}_quota" >/dev/null 2>&1 || true
+            jq ".ports.\\"\$port\\".quota.last_reset_cycle = \\"\$cur\\"" "\$CONFIG_FILE" > "\$tmp" && mv "\$tmp" "\$CONFIG_FILE"
+            log "端口 \$port 计费周期重置完成 (周期起点: \$cur)"
+        fi
+    done
+}
+
+if command -v flock >/dev/null 2>&1; then
+    ( flock -n 9 || exit 0; reset_all ) 9>"\$LOCK_FILE"
+else
+    reset_all
+fi
+PTMRESETEOF
+    chmod +x "$PTM_RESET_SCRIPT"
+
+    local daily_h daily_m reset_h reset_m tmp_cron
+    read -r daily_h daily_m < <(snell_bj_to_local_time 00 10)
+    read -r reset_h reset_m < <(snell_bj_to_local_time 00 20)
+    tmp_cron=$(mktemp) || return 1
+    crontab -l 2>/dev/null | grep -v "# ptm每日检查" | grep -v "# ptm每日重置" > "$tmp_cron" || true
+    echo "${daily_m} ${daily_h} * * * ${PTM_DAILY_SCRIPT} >/dev/null 2>&1  # ptm每日检查" >> "$tmp_cron"
+    echo "${reset_m} ${reset_h} * * * ${PTM_RESET_SCRIPT} >/dev/null 2>&1  # ptm每日重置" >> "$tmp_cron"
+    crontab "$tmp_cron" 2>/dev/null && rm -f "$tmp_cron"
+    echo -e "${gl_lv}✓ 已注册每日北京时间 00:10(到期/配额检查) 与 00:20(计费周期重置) 定时任务${gl_bai}"
+}
+
+ptm_remove_cron() {
+    if command -v crontab >/dev/null 2>&1; then
+        local tmp_cron
+        tmp_cron=$(mktemp) || return 1
+        crontab -l 2>/dev/null | grep -v "# ptm每日检查" | grep -v "# ptm每日重置" > "$tmp_cron" || true
+        crontab "$tmp_cron" 2>/dev/null && rm -f "$tmp_cron"
+    fi
+    rm -f "$PTM_DAILY_SCRIPT" "$PTM_RESET_SCRIPT"
+}
+
+# ---- 交互菜单 ----
+
+ptm_menu_add_port() {
+    ptm_init_config
+    ptm_check_dependencies
+    echo -e "${gl_kjlan}== 添加端口监控 ==${gl_bai}"
+    echo "格式：单端口(如 40001) / 端口段(如 8000-8100) / 端口组(如 101,102,105)"
+    read -e -p "请输入端口: " port
+    if [ -z "$port" ]; then echo -e "${gl_hong}端口不能为空${gl_bai}"; break_end; return; fi
+    if ! [[ "$port" =~ ^[0-9]+(-[0-9]+)?(,[0-9]+)*$ ]]; then
+        echo -e "${gl_hong}端口格式不合法，只能是数字/端口段(100-200)/端口组(101,102,105)${gl_bai}"; break_end; return
+    fi
+    if jq -e ".ports | has(\"$port\")" "$PTM_CONFIG_FILE" >/dev/null 2>&1; then
+        echo -e "${gl_hong}该端口已在监控中${gl_bai}"; break_end; return
     fi
 
-    rm -f "$OAI2_PORT_FILE"
-    rm -f "$OAI2_TOKEN_FILE"
+    echo "计费模式：1) double 双向×2(默认)  2) premium 内网中转×1  3) single 仅出站×2"
+    read -e -p "选择 [1-3，默认1]: " mode_choice
+    local billing_mode="double"
+    case "$mode_choice" in 2) billing_mode="premium" ;; 3) billing_mode="single" ;; esac
 
+    read -e -p "备注 (可留空): " remark
+    read -e -p "客户邮箱 (可留空，不填则不发通知): " email
+
+    while true; do
+        read -e -p "月度流量配额 (如 100GB，留空或输入 unlimited 为不限量): " quota_input
+        [ -z "$quota_input" ] && quota_input="unlimited" && break
+        ptm_validate_quota "$quota_input" && break
+        echo -e "${gl_hong}格式不合法，只能是 unlimited 或 数字+MB/GB/TB（如 100GB）${gl_bai}"
+    done
+    while true; do
+        read -e -p "带宽限速 (如 100mbit，留空为不限速): " rate_input
+        [ -z "$rate_input" ] && break
+        ptm_validate_rate "$rate_input" && break
+        echo -e "${gl_hong}格式不合法，只能是数字+kbit/mbit/gbit（如 100mbit），留空为不限速${gl_bai}"
+    done
+    read -e -p "到期日 (格式 YYYY-MM-DD，留空为永久有效): " expire_input
+    read -e -p "每月流量重置日 (1-28，留空为不自动重置): " reset_day_input
+
+    local created_at
+    created_at=$(ptm_beijing_time -Iseconds)
+    local rate_enabled="false"
+    [ -n "$rate_input" ] && rate_enabled="true"
+    local reset_day_json="null"
+    [ -n "$reset_day_input" ] && reset_day_json="$reset_day_input"
+
+    # 用 jq -n --arg 安全构造 JSON（避免备注/邮箱含引号或反斜杠时破坏 jq 表达式或 JSON 结构）
+    local port_json
+    port_json=$(jq -n \
+        --arg remark "$remark" --arg mode "$billing_mode" --arg email "$email" \
+        --arg created "$created_at" --arg expire "$expire_input" \
+        --arg rate "${rate_input:-unlimited}" --arg quota "$quota_input" \
+        --argjson rate_enabled "$rate_enabled" --argjson reset_day "$reset_day_json" \
+        '{remark: $remark, billing_mode: $mode, email: $email, created_at: $created,
+          expiration_date: $expire,
+          bandwidth_limit: {enabled: $rate_enabled, rate: $rate},
+          quota: {enabled: true, monthly_limit: $quota, reset_day: $reset_day}}')
+
+    ptm_update_config ".ports.\"$port\" = $port_json"
+
+    ptm_add_nftables_rules "$port"
+    [ "$quota_input" != "unlimited" ] && ptm_apply_quota "$port" "$quota_input"
+    [ -n "$rate_input" ] && ptm_apply_tc_limit "$port" "$rate_input"
+    ptm_install_cron
+    echo -e "${gl_lv}✓ 端口 $port 监控已添加${gl_bai}"
     break_end
 }
 
-# OAI2 管理主菜单
-manage_oai2() {
+ptm_menu_list_ports() {
+    ptm_init_config
+    local ports
+    ports=$(ptm_get_active_ports)
+    if [ -z "$ports" ]; then
+        echo -e "${gl_huang}暂无监控端口${gl_bai}"; break_end; return
+    fi
+    printf "%-20s %-10s %-10s %-16s %-18s %s\n" "端口" "计费模式" "状态" "已用流量" "配额" "到期日"
+    local port
+    for port in $ports; do
+        local billing_mode quota_limit expire_date status usage
+        billing_mode=$(jq -r ".ports.\"$port\".billing_mode // \"double\"" "$PTM_CONFIG_FILE")
+        quota_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+        expire_date=$(jq -r ".ports.\"$port\".expiration_date // \"永久\"" "$PTM_CONFIG_FILE")
+        status=$(ptm_format_running_status "$(ptm_get_port_running_status "$port")")
+        usage=$(ptm_format_bytes "$(ptm_get_port_monthly_usage "$port")")
+        printf "%-20s %-10s %-10s %-16s %-18s %s\n" "$port" "$billing_mode" "$status" "$usage" "$quota_limit" "$expire_date"
+    done
+    break_end
+}
+
+ptm_menu_renew() {
+    ptm_init_config
+    read -e -p "请输入要续费的端口: " port
+    if ! jq -e ".ports | has(\"$port\")" "$PTM_CONFIG_FILE" >/dev/null 2>&1; then
+        echo -e "${gl_hong}端口不存在${gl_bai}"; break_end; return
+    fi
+    read -e -p "续费月数: " months
+    if ! [[ "$months" =~ ^[0-9]+$ ]] || [ "$months" -le 0 ]; then
+        echo -e "${gl_hong}请输入正整数月数${gl_bai}"; break_end; return
+    fi
+    local current_expire today reset_day base_date
+    current_expire=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+    reset_day=$(jq -r ".ports.\"$port\".quota.reset_day // 1" "$PTM_CONFIG_FILE")
+    today=$(ptm_beijing_time +%Y-%m-%d)
+    local today_epoch expire_epoch
+    today_epoch=$(date -d "$today" +%s 2>/dev/null || echo 0)
+    expire_epoch=$(date -d "$current_expire" +%s 2>/dev/null || echo 0)
+    if [ -n "$current_expire" ] && [ "$current_expire" != "null" ] && [ "$expire_epoch" -gt "$today_epoch" ]; then
+        base_date="$current_expire"
+    else
+        base_date="$today"
+    fi
+    local new_date
+    new_date=$(ptm_calculate_next_expiration "$base_date" "$months" "${reset_day:-1}")
+    if [ -z "$new_date" ]; then
+        echo -e "${gl_hong}日期计算失败${gl_bai}"; break_end; return
+    fi
+    if ! ptm_update_config ".ports.\"$port\".expiration_date = \"$new_date\""; then
+        echo -e "${gl_hong}续费写入失败，请重试${gl_bai}"; break_end; return
+    fi
+    local saved_date
+    saved_date=$(jq -r ".ports.\"$port\".expiration_date // \"\"" "$PTM_CONFIG_FILE")
+    if [ "$saved_date" != "$new_date" ]; then
+        echo -e "${gl_hong}续费验证失败：期望 $new_date，实际 $saved_date${gl_bai}"; break_end; return
+    fi
+    # 到期日延后，若端口此前处于到期封锁状态需要解封
+    if [ "$(ptm_get_port_running_status "$port")" = "blocked_expired" ]; then
+        ptm_unblock_port "$port"
+    fi
+    echo -e "${gl_lv}✓ 续费成功，新到期日: $new_date${gl_bai}"
+    break_end
+}
+
+ptm_menu_edit_limit() {
+    ptm_init_config
+    read -e -p "请输入要修改的端口: " port
+    if ! jq -e ".ports | has(\"$port\")" "$PTM_CONFIG_FILE" >/dev/null 2>&1; then
+        echo -e "${gl_hong}端口不存在${gl_bai}"; break_end; return
+    fi
+    read -e -p "新的月度流量配额 (如 100GB，输入 unlimited 为不限量，留空不改): " quota_input
+    if [ -n "$quota_input" ] && ! ptm_validate_quota "$quota_input"; then
+        echo -e "${gl_hong}格式不合法，只能是 unlimited 或 数字+MB/GB/TB（如 100GB），本次不修改配额${gl_bai}"
+        quota_input=""
+    fi
+    read -e -p "新的带宽限速 (如 100mbit，输入 unlimited 为不限速，留空不改): " rate_input
+    if [ -n "$rate_input" ] && ! ptm_validate_rate "$rate_input"; then
+        echo -e "${gl_hong}格式不合法，只能是数字+kbit/mbit/gbit（如 100mbit），本次不修改限速${gl_bai}"
+        rate_input=""
+    fi
+
+    if [ -n "$quota_input" ]; then
+        ptm_update_config ".ports.\"$port\".quota.monthly_limit = \"$quota_input\""
+        if [ "$quota_input" = "unlimited" ]; then
+            ptm_remove_quota "$port"
+        else
+            ptm_apply_quota "$port" "$quota_input"
+        fi
+    fi
+    if [ -n "$rate_input" ]; then
+        if [ "$rate_input" = "unlimited" ]; then
+            ptm_update_config ".ports.\"$port\".bandwidth_limit.enabled = false"
+            ptm_remove_tc_limit "$port"
+        else
+            ptm_update_config ".ports.\"$port\".bandwidth_limit.enabled = true | .ports.\"$port\".bandwidth_limit.rate = \"$rate_input\""
+            ptm_apply_tc_limit "$port" "$rate_input"
+        fi
+    fi
+    echo -e "${gl_lv}✓ 修改完成${gl_bai}"
+    break_end
+}
+
+ptm_menu_reset_now() {
+    ptm_init_config
+    read -e -p "请输入要立即重置流量的端口 (留空重置全部到期端口): " port
+    if [ -z "$port" ]; then
+        ptm_reset_all_due_ports
+        echo -e "${gl_lv}✓ 已按计费周期重置全部到期端口${gl_bai}"
+    else
+        if ! jq -e ".ports | has(\"$port\")" "$PTM_CONFIG_FILE" >/dev/null 2>&1; then
+            echo -e "${gl_hong}端口不存在${gl_bai}"; break_end; return
+        fi
+        ptm_auto_reset_port "$port"
+        local reset_day
+        reset_day=$(jq -r ".ports.\"$port\".quota.reset_day // 1" "$PTM_CONFIG_FILE")
+        ptm_update_config ".ports.\"$port\".quota.last_reset_cycle = \"$(ptm_get_billing_cycle_start "$reset_day")\""
+        echo -e "${gl_lv}✓ 端口 $port 流量已重置${gl_bai}"
+    fi
+    break_end
+}
+
+ptm_menu_remove_port() {
+    ptm_init_config
+    read -e -p "请输入要删除监控的端口: " port
+    if ! jq -e ".ports | has(\"$port\")" "$PTM_CONFIG_FILE" >/dev/null 2>&1; then
+        echo -e "${gl_hong}端口不存在${gl_bai}"; break_end; return
+    fi
+    read -e -p "确认删除端口 $port 的监控？(y/N): " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        ptm_remove_nftables_rules "$port"
+        ptm_remove_quota "$port"
+        ptm_remove_tc_limit "$port"
+        ptm_update_config "del(.ports.\"$port\")"
+        echo -e "${gl_lv}✓ 端口 $port 监控已删除${gl_bai}"
+    else
+        echo "已取消"
+    fi
+    break_end
+}
+
+ptm_menu_configure_notify() {
+    ptm_init_config
+    echo -e "${gl_kjlan}== 邮件通知设置 (Resend API) ==${gl_bai}"
+    echo "未配置 Resend API Key 时，到期/配额提醒邮件会静默跳过（不影响封锁/重置等核心功能）"
+    read -e -p "Resend API Key (留空不改): " api_key
+    read -e -p "发件邮箱地址 (留空不改): " email_from
+    read -e -p "发件人显示名称 (留空不改): " email_from_name
+    read -e -p "管理员邮箱 (接收系统级通知，留空不改): " admin_email
+
+    [ -n "$api_key" ] && ptm_update_config ".notify.resend_api_key = \"$api_key\" | .notify.enabled = true"
+    [ -n "$email_from" ] && ptm_update_config ".notify.email_from = \"$email_from\""
+    [ -n "$email_from_name" ] && ptm_update_config ".notify.email_from_name = \"$email_from_name\""
+    [ -n "$admin_email" ] && ptm_update_config ".notify.admin_email = \"$admin_email\""
+    echo -e "${gl_lv}✓ 通知设置已保存${gl_bai}"
+    break_end
+}
+
+ptm_menu_diagnose() {
+    ptm_init_config
+    echo -e "${gl_kjlan}== 配置诊断 ==${gl_bai}"
+    local ports
+    ports=$(ptm_get_active_ports)
+    if [ -z "$ports" ]; then
+        echo -e "${gl_huang}暂无监控端口${gl_bai}"; break_end; return
+    fi
+    local port
+    for port in $ports; do
+        echo -n "端口 $port: "
+        local ok=true
+        if ! ptm_is_port_rules_exist "$port"; then
+            echo -n "❌流量规则缺失 "
+            ok=false
+        fi
+        local quota_limit
+        quota_limit=$(jq -r ".ports.\"$port\".quota.monthly_limit // \"unlimited\"" "$PTM_CONFIG_FILE")
+        if [ "$quota_limit" != "unlimited" ]; then
+            local port_safe
+            port_safe=$(ptm_safe_name "$port")
+            if ! nft list quota $PTM_TABLE_FAMILY $PTM_TABLE_NAME "port_${port_safe}_quota" &>/dev/null; then
+                echo -n "❌配额对象缺失 "
+                ok=false
+            fi
+        fi
+        local email
+        email=$(jq -r ".ports.\"$port\".email // \"\"" "$PTM_CONFIG_FILE")
+        [ -z "$email" ] || [ "$email" = "null" ] && echo -n "⚠️未配置客户邮箱 "
+        [ "$ok" = true ] && echo -n "✅正常"
+        echo ""
+    done
+    echo ""
+    if crontab -l 2>/dev/null | grep -q "# ptm每日检查"; then
+        echo -e "${gl_lv}✅ 每日检查定时任务已注册${gl_bai}"
+    else
+        echo -e "${gl_huang}⚠️ 每日检查定时任务未注册（新增一个端口即可自动注册）${gl_bai}"
+    fi
+    if crontab -l 2>/dev/null | grep -q "# ptm每日重置"; then
+        echo -e "${gl_lv}✅ 每日重置定时任务已注册${gl_bai}"
+    else
+        echo -e "${gl_huang}⚠️ 每日重置定时任务未注册（新增一个端口即可自动注册）${gl_bai}"
+    fi
+    local notify_enabled
+    notify_enabled=$(jq -r '.notify.enabled // false' "$PTM_CONFIG_FILE")
+    if [ "$notify_enabled" = "true" ]; then
+        echo -e "${gl_lv}✅ 邮件通知已配置${gl_bai}"
+    else
+        echo -e "${gl_huang}⚠️ 邮件通知未配置（菜单 7 可配置，不配置则仅静默跳过通知）${gl_bai}"
+    fi
+    break_end
+}
+
+ptm_menu_uninstall() {
+    echo -e "${gl_hong}此操作将删除所有端口监控、nftables 规则、tc 限速、定时任务及 ${PTM_CONFIG_DIR} 配置目录${gl_bai}"
+    read -e -p "确认完全卸载？输入 YES 确认: " confirm
+    if [ "$confirm" != "YES" ]; then
+        echo "已取消"; break_end; return
+    fi
+    local port
+    for port in $(ptm_get_active_ports 2>/dev/null); do
+        ptm_remove_nftables_rules "$port"
+        ptm_remove_quota "$port"
+        ptm_remove_tc_limit "$port"
+    done
+    nft delete table $PTM_TABLE_FAMILY $PTM_TABLE_NAME 2>/dev/null || true
+    ptm_remove_cron
+    rm -rf "$PTM_CONFIG_DIR"
+    echo -e "${gl_lv}✓ 已完全卸载端口流量计费管理${gl_bai}"
+    break_end
+}
+
+ptm_menu() {
+    ptm_init_config
     while true; do
         clear
         echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-        echo -e "${gl_kjlan}  OAI2 部署管理 (令牌注册面板)${gl_bai}"
+        echo -e "${gl_kjlan}  端口流量计费与到期管理${gl_bai}"
         echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
         echo ""
-
-        # 显示当前状态
-        local status=$(oai2_check_status)
-        local api_port=$(oai2_get_port)
-
-        case "$status" in
-            "running")
-                echo -e "当前状态: ${gl_lv}✅ 运行中${gl_bai} (端口: ${api_port})"
-                ;;
-            "stopped")
-                echo -e "当前状态: ${gl_hong}❌ 已停止${gl_bai}"
-                ;;
-            "installed_no_service")
-                echo -e "当前状态: ${gl_huang}⚠️ 已安装但服务未创建${gl_bai}"
-                ;;
-            "not_installed")
-                echo -e "当前状态: ${gl_hui}未安装${gl_bai}"
-                ;;
-        esac
-
+        echo "1. 添加端口监控"
+        echo "2. 查看所有端口状态"
+        echo "3. 续费 / 修改到期日"
+        echo "4. 修改配额 / 带宽限制"
+        echo "5. 立即手动重置流量"
+        echo "6. 删除端口监控"
+        echo "7. 邮件通知设置 (Resend)"
+        echo "8. 配置诊断 / 自愈检测"
+        echo "9. 完全卸载"
         echo ""
-        echo -e "${gl_kjlan}[部署与更新]${gl_bai}"
-        echo "1. 一键部署（首次安装）"
-        echo "2. 更新版本（替换二进制）"
-        echo ""
-        echo -e "${gl_kjlan}[服务管理]${gl_bai}"
-        echo "3. 查看状态"
-        echo "4. 查看日志"
-        echo "5. 启动服务"
-        echo "6. 停止服务"
-        echo "7. 重启服务"
-        echo ""
-        echo -e "${gl_kjlan}[配置与信息]${gl_bai}"
-        echo "8. 查看配置信息"
-        echo "9. 修改端口"
-        echo "10. 修改登录 Token"
-        echo ""
-        echo -e "${gl_kjlan}[卸载]${gl_bai}"
-        echo -e "${gl_hong}99. 卸载${gl_bai}"
-        echo ""
-        echo "0. 返回上级菜单"
+        echo "0. 返回主菜单"
         echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-
-        read -e -p "请选择操作 [0-10, 99]: " choice
-
+        read -e -p "请选择操作 [0-9]: " choice
         case $choice in
-            1) oai2_deploy ;;
-            2) oai2_update ;;
-            3) oai2_status ;;
-            4) oai2_logs ;;
-            5) oai2_start ;;
-            6) oai2_stop ;;
-            7) oai2_restart ;;
-            8) oai2_show_config ;;
-            9) oai2_change_port ;;
-            10) oai2_change_token ;;
-            99) oai2_uninstall ;;
+            1) ptm_menu_add_port ;;
+            2) ptm_menu_list_ports ;;
+            3) ptm_menu_renew ;;
+            4) ptm_menu_edit_limit ;;
+            5) ptm_menu_reset_now ;;
+            6) ptm_menu_remove_port ;;
+            7) ptm_menu_configure_notify ;;
+            8) ptm_menu_diagnose ;;
+            9) ptm_menu_uninstall ;;
             0) return ;;
-            *) echo "无效的选择"; sleep 1 ;;
+            *) echo "无效选择"; sleep 1 ;;
         esac
     done
 }

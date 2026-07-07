@@ -1,10 +1,10 @@
-# BBR v3 优化脚本 - Ultimate Edition v5.3.0
+# BBR v3 优化脚本 - Ultimate Edition v5.4.0
 
 **XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**
 
-一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 32 项实用功能，优化你的 VPS 服务器。
+一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 33 项实用功能，优化你的 VPS 服务器。
 
-> **版本**: v5.3.0 🆕 **新增**：进 Snell 主菜单自动检查 v5/v6 有没有新版本（每天联网一次 + 缓存秒回 + 并行探测，结果显示在菜单顶部，不卡）。当前内置 v5 内核 5.0.1、v6 内核 6.0.0b2
+> **版本**: v5.4.0 🆕 **新增**：菜单33「端口流量计费与到期管理」，基于 nftables 计数/配额 + tc 限速实现按端口流量计费、配额管控与到期自动停机，适合合租/转售 VPS 端口场景；同时精简了 AI 代理工具箱（移除 Antigravity/OpenClaw/CLIProxyAPI/Codex Console/OAI2）。
 
 ---
 
@@ -165,6 +165,12 @@ chmod +x net-tcp-tune.sh
 | :--: | ----------------- | -------------------- |
 |  32  | **AI 代理工具箱** | 推荐，包含以下子功能 |
 
+### 流量与端口管理
+
+| 编号 | 功能名称                     | 说明                                 |
+| :--: | ---------------------------- | ------------------------------------ |
+|  33  | **端口流量计费与到期管理 🆕** | 按端口计费/配额/限速/到期自动停机 |
+
 ### 一键优化
 
 | 编号 | 功能名称                                  | 说明                           |
@@ -173,18 +179,13 @@ chmod +x net-tcp-tune.sh
 
 AI 代理工具箱包含：
 
-- **Antigravity Claude Proxy**：Claude Code 反代服务，systemd 托管
 - **Open WebUI**：AI 聊天界面，Docker 容器化
 - **CRS 部署管理**：Claude API 多账户中转/拼车服务
 - **Fuclaude**：Claude 网页版共享工具
 - **Sub2API 部署管理**：订阅链接转 API 工具
 - **Caddy 多域名反代**：HTTPS 反向代理，自动 SSL 证书
 - **🆕 Cloudflare Tunnel 管理**（v5.0.0 新增）：一键部署 + 12 项完整管理功能
-- **OpenClaw 部署管理**：AI 多渠道消息网关，支持 Telegram/WhatsApp/Discord/Slack
 - **OpenAI Responses API 转换代理**：Chat Completions → Responses API 转换
-- **Codex Console 部署管理**：OpenAI 批量注册
-- **CLIProxyAPI 部署管理**：CLI 转 API 代理
-- **OAI2 部署管理**：令牌注册面板
 
 ---
 
@@ -248,17 +249,22 @@ AI 代理工具箱包含：
 - 自建服务通过自己的域名访问(Sub-Store / NAS 面板 / 内网管理界面)
 - 不想花钱买 SSL 证书,让 Cloudflare 统一托管 HTTPS
 
-### 5. OpenClaw AI 多渠道消息网关 (功能 32 子菜单)
+### 5. 🆕 端口流量计费与到期管理 (功能 33)
 
-自托管的 AI 多渠道消息网关，让你通过 Telegram/WhatsApp/Discord/Slack 与 AI 对话：
+基于 nftables 计数器/配额 + tc 限速,实现按端口的流量计费、配额管控与到期自动停机,适合合租/转售 VPS 端口的场景:
 
-- **一键部署**: 自动安装 Node.js 22+、npm 全局安装、systemd 服务配置
-- **多渠道支持**: Telegram Bot、WhatsApp、Discord Bot、Slack App 一键配置
-- **灵活模型接入**: 支持 Anthropic 直连/反代、OpenAI 兼容中转（new-api/one-api/LiteLLM）、OpenRouter
-- **Antigravity 预设**: 内置 Antigravity Claude Proxy 快速接入模板
-- **快速替换 API**: 一键更换反代地址和 API Key，无需重新配置
-- **sub2api 兼容补丁**: 部署/更新/切换 API 时自动打补丁，支持手动重打
-- **部署信息查看**: 格式化展示当前配置、SSH 隧道命令、管理命令
+- **三种计费模式**: `double`(双向流量×2,适合全程走公网转发)/ `premium`(内网中转×1)/ `single`(仅出站×2)
+- **端口三种粒度**: 单端口 / 端口段(如 `8000-8100`) / 端口组(逗号分隔,共享配额,合租场景)
+- **配额与限速**: 月度流量配额(nftables quota 对象,达量自动阻断)+ 可选 tc 带宽限速
+- **到期自动化**: 到期前 3 天邮件预警 → 到期当天自动停机 → 超期 3 天自动清理监控(过期封锁复用 quota 机制,瞬间生效)
+- **计费周期重置**: 按"计费周期起点"而非"今天是否等于重置日"判定,自动补偿关机/cron 漏跑导致的错过重置
+- **邮件通知(可选)**: 配置自己的 Resend API Key 后可收到到期/配额预警邮件,不配置则静默跳过,不影响封锁/重置等核心功能
+- **诊断自愈**: 一键检测所有端口的规则/配额/定时任务状态是否正常
+
+**典型使用场景**:
+
+- 合租 VPS,按端口分别计费、设置到期日和流量配额
+- 出租带宽/端口转发服务,到期自动停机无需人工干预
 
 ---
 
