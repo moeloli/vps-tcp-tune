@@ -1,10 +1,10 @@
-# BBR v3 优化脚本 - Ultimate Edition v5.4.1
+# BBR v3 优化脚本 - Ultimate Edition v5.4.2
 
 **XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**
 
 一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 33 项实用功能，优化你的 VPS 服务器。
 
-> **版本**: v5.4.1 🆕 **新增**：菜单33「端口流量计费与到期管理」，基于 nftables 计数/配额 + tc 限速实现按端口流量计费、配额管控与到期自动停机，适合合租/转售 VPS 端口场景；菜单结构对齐私有项目 dog 原版分组习惯；同时精简了 AI 代理工具箱（移除 Antigravity/OpenClaw/CLIProxyAPI/Codex Console/OAI2）。
+> **版本**: v5.4.2 🆕 **新增**：菜单33「端口流量计费与到期管理」，基于 nftables 计数/配额 + tc 限速实现按端口流量计费、配额管控与到期自动停机，适合合租/转售 VPS 端口场景；交互流程与菜单结构对齐私有项目 dog 原版（快速开通向导、合并端口为组、0=无限制约定等）；同时精简了 AI 代理工具箱（移除 Antigravity/OpenClaw/CLIProxyAPI/Codex Console/OAI2）。
 
 ---
 
